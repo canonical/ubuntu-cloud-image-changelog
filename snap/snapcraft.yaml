@@ -1,0 +1,65 @@
+name: ubuntu-cloud-image-changelog
+version: '0.1'
+base: core20
+summary: Helpful utility to generate package changelog between two cloud images
+description: |
+  Helpful utility to generate package changelog between two cloud images
+  using their package manifest.
+
+  Usage:
+  ubuntu-cloud-image-changelog arch suite manifest1.manifest manifest2.manifest
+
+grade: stable
+confinement: classic
+
+apps:
+  ubuntu-cloud-image-changelog:
+    environment:
+      PATH: $SNAP/usr/bin:$SNAP/bin/:$PATH
+    command: usr/bin/wrapper
+    plugs:
+      - network
+      - home
+
+parts:
+  ubuntu-cloud-image-changelog-wrapper:
+    plugin: dump
+    source: snap/local
+    override-build: |
+      chmod +x wrapper
+      snapcraftctl build
+    stage:
+      - usr/bin/wrapper
+    organize:
+      wrapper: usr/bin/wrapper
+
+  ubuntu-cloud-image-changelog:
+    plugin: python
+    # source: https://git.launchpad.net/~cloud-images-release-managers/cloud-images/+git/mfdiff
+    source: https://git.launchpad.net/~philroche/cloud-images/+git/mfdiff
+    source-type: git
+    source-branch: bugfix/pass-cache_d-to-manifest-cache
+    source-depth: 1
+    build-environment:
+      - PYTHONPATH: "$SNAPCRAFT_PART_INSTALL/usr/lib/python3/dist-packages"
+    python-packages:
+      - pip
+      - setuptools
+      - wheel
+      - python-debian
+      - requests
+      - six
+      - https://launchpad.net/python-distutils-extra/trunk/2.39/+download/python-distutils-extra-2.39.tar.gz
+      - https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/python-apt/2.0.0ubuntu0.20.04.1/python-apt_2.0.0ubuntu0.20.04.1.tar.xz; sys_platform == 'linux'
+    build-packages:
+      - gcc
+      - g++
+      - intltool
+      - dpkg
+      - apt
+      - python3-dev
+      - python3-wheel
+      - libapt-pkg-dev
+    stage-packages:
+      - dpkg
+      - apt
