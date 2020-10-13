@@ -50,24 +50,24 @@ def main(from_manifest, to_manifest):
     removed_snap_packages = []
     added_snap_packages = []
     snap_package_diffs = {}
-    
+
     # parse the from manifest
     for from_manifest_line in from_manifest_lines:
-        package, version = from_manifest_line.decode("utf-8").strip().split("\t")
+        package, *version = from_manifest_line.decode("utf-8").strip().split("\t")
         if package.startswith(snap_package_prefix):
-            package = package.replace(snap_package_prefix, '')
-            from_snap_packages[package] = version
+            package = package.replace(snap_package_prefix, "")
+            from_snap_packages[package] = version[1]
         else:
-            from_deb_packages[package] = version
+            from_deb_packages[package] = version[0]
 
     # parse the to manifest
     for to_manifest_line in to_manifest_lines:
-        package, version = to_manifest_line.decode("utf-8").strip().split("\t")
+        package, *version = to_manifest_line.decode("utf-8").strip().split("\t")
         if package.startswith(snap_package_prefix):
-            package = package.replace(snap_package_prefix, '')
-            to_snap_packages[package] = version
+            package = package.replace(snap_package_prefix, "")
+            to_snap_packages[package] = version[1]
         else:
-            to_deb_packages[package] = version
+            to_deb_packages[package] = version[0]
 
     # Are there any snap package diffs?
     if from_snap_packages or to_snap_packages:
@@ -117,13 +117,14 @@ def main(from_manifest, to_manifest):
 
         click.echo("Deb packages added: {}".format(added_deb_packages))
         click.echo("Deb packages removed: {}".format(removed_deb_packages))
-        click.echo(
-            "Deb packages changed: {}".format(list(deb_package_diffs.keys())))
+        click.echo("Deb packages changed: {}".format(list(deb_package_diffs.keys())))
 
     if snap_package_diffs:
 
-        click.echo("\n** Package version diffs for for changed snap packages "
-                   "below. Full changelog for snap packages are not listed **\n")
+        click.echo(
+            "\n** Package version diffs for for changed snap packages "
+            "below. Full changelog for snap packages are not listed **\n"
+        )
 
         # for each of the snap package diffs list the diff in versions
         for package, from_to in snap_package_diffs.items():
