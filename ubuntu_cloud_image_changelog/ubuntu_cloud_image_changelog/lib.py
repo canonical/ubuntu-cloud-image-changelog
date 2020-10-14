@@ -72,10 +72,18 @@ def get_changelog(cache_directory, package_name, package_version):
     )
 
     changelog = requests.get(changelog_url)
+    valid_changelog = False
     with open(cache_filename, "wb") as cache_file:
         if changelog.status_code == 200:
             cache_file.write(changelog.content)
+            valid_changelog = True
         else:
+            cache_file.write(
+                "Unable to find changelog for {} version {}. "
+                "Was this package installed from a PPA "
+                "perhaps?".format(package_name, package_version).encode("utf-8")
+            )
+            valid_changelog = False
             logging.error("missing %s: %s", package_name, changelog_url)
-            raise
-    return cache_filename
+
+    return cache_filename, valid_changelog

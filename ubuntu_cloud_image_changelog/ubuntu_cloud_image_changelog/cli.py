@@ -146,13 +146,19 @@ def main(from_manifest, to_manifest):
         # for each of the deb package diffs download the changelog
         with tempfile.TemporaryDirectory() as tmp_cache_directory:
             for package, from_to in deb_package_diffs.items():
-                package_changelog_file = lib.get_changelog(
+                package_changelog_file, valid_changelog = lib.get_changelog(
                     tmp_cache_directory, package, from_to["to"]
                 )
-                # get changelog just between the from and to version
-                version_diff_changelog = lib.parse_changelog(
-                    package_changelog_file, from_to["from"], from_to["to"]
-                )
+                if valid_changelog:
+                    # get changelog just between the from and to version
+                    version_diff_changelog = lib.parse_changelog(
+                        package_changelog_file, from_to["from"], from_to["to"]
+                    )
+                else:
+                    with open(
+                        package_changelog_file, "rb"
+                    ) as unparsed_invalid_changelog_file:
+                        version_diff_changelog = unparsed_invalid_changelog_file.read()
                 click.echo(
                     "==========================================================="
                     "==========================================================="
