@@ -2,6 +2,17 @@
 History
 =======
 
+0.8.0 (2020-11-09)
+------------------
+
+* handle package version that do not exactly conform to debian package version
+  shim-signed is a special package as it appends the version of the
+  binary shim from Microsoft. This full version will not appear in
+  the manifest so we can safely remove anything after the binary shim version.
+
+  Example version: 1.37~18.04.6+15+1533136590.3beb971-0ubuntu1
+
+
 0.7.3 (2020-11-09)
 ------------------
 
