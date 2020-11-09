@@ -32,8 +32,19 @@ from ubuntu_cloud_image_changelog import lib
         else ""
     ),
 )
-def main(from_manifest, to_manifest):
-    # type: (Text, Text) -> None
+@click.option(
+    "--ppa",
+    "ppas",
+    required=False,
+    multiple=True,
+    type=click.STRING,
+    help="Packages in manifest are known to have been installed from this PPA."
+    "Expected format is "
+    "'https://launchpad.net/~%LAUNCHPAD_USERNAME%/+archive/ubuntu/%PPA_NAME%'"
+    "Multiple --ppa options can be specified",
+)
+def main(from_manifest, to_manifest, ppas):
+    # type: (Text, Text, List) -> None
     """"""
     from_manifest_lines = from_manifest.readlines()
     to_manifest_lines = to_manifest.readlines()
@@ -141,18 +152,61 @@ def main(from_manifest, to_manifest):
 
     if deb_package_diffs:
 
-        click.echo("\n** Changelogs for changed deb packages below: **\n")
+        click.echo("\n** Changelogs for added and changed deb packages " "below: **\n")
 
-        # for each of the deb package diffs download the changelog
+        # for each of the deb package diffs and new packages download the
+        # changelog
         with tempfile.TemporaryDirectory() as tmp_cache_directory:
-            for package, from_to in deb_package_diffs.items():
-                package_changelog_file, valid_changelog = lib.get_changelog(
-                    tmp_cache_directory, package, from_to["to"]
+            for package in added_deb_packages:
+                (
+                    package_changelog_file,
+                    valid_changelog,
+                    valid_ppa_changes,
+                ) = lib.get_changelog(
+                    tmp_cache_directory, package, to_deb_packages[package], ppas
                 )
+                if valid_changelog:
+                    # get the most recent changelog entry
+                    version_diff_changelog = lib.parse_changelog(
+                        package_changelog_file, count=1
+                    )
+                elif valid_ppa_changes:
+                    # get the most recent changes entry
+                    version_diff_changelog = lib.parse_ppa_changes(
+                        package_changelog_file
+                    )
+                else:
+                    with open(
+                        package_changelog_file, "rb"
+                    ) as unparsed_invalid_changelog_file:
+                        version_diff_changelog = unparsed_invalid_changelog_file.read()
+                click.echo(
+                    "==========================================================="
+                    "==========================================================="
+                )
+                click.echo(
+                    "{} version {} was added. Below is the most recent changelog entry".format(
+                        package, to_deb_packages[package]
+                    )
+                )
+                click.echo()
+                click.echo(version_diff_changelog)
+
+            for package, from_to in deb_package_diffs.items():
+                (
+                    package_changelog_file,
+                    valid_changelog,
+                    valid_ppa_changes,
+                ) = lib.get_changelog(tmp_cache_directory, package, from_to["to"], ppas)
                 if valid_changelog:
                     # get changelog just between the from and to version
                     version_diff_changelog = lib.parse_changelog(
                         package_changelog_file, from_to["from"], from_to["to"]
+                    )
+                elif valid_ppa_changes:
+                    # get the most recent changes entry
+                    version_diff_changelog = lib.parse_ppa_changes(
+                        package_changelog_file
                     )
                 else:
                     with open(
