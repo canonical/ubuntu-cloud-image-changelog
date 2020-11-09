@@ -103,3 +103,6 @@ ENV/
 
 # IDE settings
 .vscode/
+/sample-manifest-diff-changelog.txt
+/sample-manifests-original.zip
+/sample-ppa-source.changes

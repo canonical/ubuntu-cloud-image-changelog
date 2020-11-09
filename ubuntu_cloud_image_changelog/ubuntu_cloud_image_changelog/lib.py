@@ -4,6 +4,7 @@ import logging
 import requests
 import subprocess
 from debian import deb822
+from debian.changelog import Changelog
 
 
 def parse_ppa_changes(ppa_changes_filename):
@@ -37,36 +38,68 @@ def parse_ppa_changes(ppa_changes_filename):
 
 def parse_changelog(changelog_filename, from_version=None, to_version=None, count=1):
     """
-    parse changelog using dpkg-parsechangelog
+    Extract changelog entries within a version range
+
+    The range of changelog entries returned will include all entries
+    after version_low up to, and including, version_high.
+    If either the starting or ending version are not found in the
+    list of changelog entries the result will be incomplete and
+    a non-empty error message is returned to indicate the issue.
     """
-    try:
-        cmdline = ["dpkg-parsechangelog"]
-        cmdline.extend(["-l", changelog_filename])
-        if from_version and to_version:
-            cmdline.extend(["--from", from_version])
-            cmdline.extend(["--to", to_version])
-        else:
-            cmdline.extend(["--count", str(count)])
+    changelog = ""
+    # Set max_blocks to none if we know the versions we want changelog for
+    if from_version and to_version:
+        count = None
 
-        process = subprocess.Popen(
-            " ".join(cmdline),
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-        )
-        out, err = process.communicate()
+    with open(changelog_filename, "r") as fileptr:
+        parsed_changelog = Changelog(fileptr.read(), max_blocks=count)
+        start = False
+        end = False
+        try:
+            changelog += "Source: {}\n".format(parsed_changelog.get_package())
+            changelog += "Version: {}\n".format(parsed_changelog.version)
+            changelog += "Distribution: {}\n".format(parsed_changelog.distributions)
+            changelog += "Urgency: {}\n".format(parsed_changelog.urgency)
+            changelog += "Maintainer: {}\n".format(parsed_changelog.author)
+            changelog += "Date: {}\n".format(parsed_changelog.date)
 
-        # Check the error state
-        retcode = process.returncode
-        if retcode:
+            # The changelog blocks are in reverse order; we'll see high before low.
+            change_blocks = []
+            launchpad_bugs_fixed = []
+            for changelog_block in parsed_changelog:
+                if changelog_block.version == to_version:
+                    start = True
+                    change_blocks = []
+                if changelog_block.version == from_version:
+                    end = True
+                    break
+                launchpad_bugs_fixed += changelog_block.lp_bugs_closed
+                changeblock_summary = "{} ({}) {}; urgency={}".format(
+                    changelog_block.package,
+                    changelog_block.version,
+                    changelog_block.distributions,
+                    changelog_block.urgency,
+                )
+                change_blocks.append((changeblock_summary, changelog_block))
+
+            changelog += "Launchpad-Bugs-Fixed: {}\n".format(launchpad_bugs_fixed)
+            changelog += "Changes:\n"
+            for changeblock_summary, change_block in change_blocks:
+                changelog += "{}\n".format(changeblock_summary)
+                for change in change_block.changes():
+                    changelog += "{}\n".format(change)
+            if (from_version and not start) or (to_version and not end):
+                raise Exception(
+                    "Unable to parse changelog {} for versions {} to {}".format(
+                        changelog_filename, from_version, to_version
+                    )
+                )
+        except:
             raise Exception(
-                'Call failed for {} rc:{} "{}"'.format(cmdline, retcode, err)
+                "Unable to parse package changelog {}".format(changelog_filename)
             )
-        return out
 
-    except Exception as e:
-        logging.error("Error sending dpkg-parsechangelog: %s", str(e))
+        return changelog
 
 
 def get_changelog(cache_directory, package_name, package_version, ppas):
