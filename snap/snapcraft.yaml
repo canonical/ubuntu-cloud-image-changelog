@@ -36,8 +36,5 @@ parts:
 
   ubuntu-cloud-image-changelog:
     plugin: python
-    source: ubuntu_cloud_image_changelog
     python-packages:
-      - pip
-      - setuptools
-      - wheel
+      - ubuntu-cloud-image-changelog
