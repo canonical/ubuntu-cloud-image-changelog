@@ -1,5 +1,5 @@
 name: ubuntu-cloud-image-changelog
-version: '0.7.2'
+version: '0.7.3'
 base: core20
 summary: Helpful utility to generate package changelog between two cloud images
 description: |

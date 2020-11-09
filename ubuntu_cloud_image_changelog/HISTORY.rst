@@ -2,6 +2,11 @@
 History
 =======
 
+0.7.3 (2020-11-09)
+------------------
+
+* package versions in a changelog may or may not include the epoch
+
 0.7.2 (2020-11-09)
 ------------------
 
