@@ -2,6 +2,11 @@
 History
 =======
 
+0.7.2 (2020-11-09)
+------------------
+
+* use consistent ubuntu-cloud-image-changelog entry point
+
 0.7 (2020-11-09)
 ------------------
 
