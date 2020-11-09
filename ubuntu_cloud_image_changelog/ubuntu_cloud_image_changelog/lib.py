@@ -5,6 +5,7 @@ import requests
 import subprocess
 from debian import deb822
 from debian.changelog import Changelog
+from debian.debian_support import Version
 
 
 def parse_ppa_changes(ppa_changes_filename):
@@ -48,7 +49,24 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
     """
     changelog = ""
     # Set max_blocks to none if we know the versions we want changelog for
+    from_versions = []
+    to_versions = []
     if from_version and to_version:
+        # package versions in a changelog may or may not include the epoch
+        from_versions.append(from_version)
+        from_version_obj = Version(from_version)
+        if from_version_obj.epoch:
+            from_version_without_epoch = from_version_obj.full_version.replace(
+                "{}:".format(from_version_obj.epoch), ""
+            )
+            from_versions.append(from_version_without_epoch)
+        to_versions.append(to_version)
+        to_version_obj = Version(to_version)
+        if to_version_obj.epoch:
+            to_version_without_epoch = to_version_obj.full_version.replace(
+                "{}:".format(to_version_obj.epoch), ""
+            )
+            to_versions.append(to_version_without_epoch)
         count = None
 
     with open(changelog_filename, "r") as fileptr:
@@ -67,10 +85,10 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
             change_blocks = []
             launchpad_bugs_fixed = []
             for changelog_block in parsed_changelog:
-                if changelog_block.version == to_version:
+                if changelog_block.version in to_versions:
                     start = True
                     change_blocks = []
-                if changelog_block.version == from_version:
+                if changelog_block.version in from_versions:
                     end = True
                     break
                 launchpad_bugs_fixed += changelog_block.lp_bugs_closed
@@ -94,7 +112,8 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                         changelog_filename, from_version, to_version
                     )
                 )
-        except:
+        except Exception as ex:
+            raise ex
             raise Exception(
                 "Unable to parse package changelog {}".format(changelog_filename)
             )
