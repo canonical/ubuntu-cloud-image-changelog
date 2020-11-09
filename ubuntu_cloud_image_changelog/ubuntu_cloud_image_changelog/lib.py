@@ -67,6 +67,14 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                 "{}:".format(to_version_obj.epoch), ""
             )
             to_versions.append(to_version_without_epoch)
+        # shim-signed is a special package as it appends the version of the
+        # binary shim from Microsoft. This full version will not appear in
+        # the manifest so we can safely remove anything after the binary
+        # shim version.
+        if "+" in from_version:
+            from_versions.append(from_version[0 : from_version.index("+")])
+        if "+" in to_version:
+            to_versions.append(to_version[0 : to_version.index("+")])
         count = None
 
     with open(changelog_filename, "r") as fileptr:
