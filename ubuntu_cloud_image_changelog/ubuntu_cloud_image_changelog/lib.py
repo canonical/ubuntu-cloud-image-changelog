@@ -89,7 +89,7 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
             changelog += "Maintainer: {}\n".format(parsed_changelog.author)
             changelog += "Date: {}\n".format(parsed_changelog.date)
 
-            # The changelog blocks are in reverse order; we'll see high before low.
+            # The changelog blocks are in reverse order; we'll see high|to before low|from.
             change_blocks = []
             launchpad_bugs_fixed = []
             for changelog_block in parsed_changelog:
@@ -114,8 +114,14 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                 changelog += "{}\n".format(changeblock_summary)
                 for change in change_block.changes():
                     changelog += "{}\n".format(change)
-            if (from_version and not start) or (to_version and not end):
-                raise Exception(
+            # log a warning if we have no changelog or
+            # from_version  ot found or to_version not found
+            if (
+                (from_version and not start)
+                or (to_version and not end)
+                or not changelog
+            ):
+                logging.warning(
                     "Unable to parse changelog {} for versions {} to {}".format(
                         changelog_filename, from_version, to_version
                     )
