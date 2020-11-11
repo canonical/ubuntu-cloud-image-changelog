@@ -2,6 +2,11 @@
 History
 =======
 
+0.8.1 (2020-11-11)
+------------------
+
+* Improve handling of changelog parsing if from version or to version not found
+
 0.8.0 (2020-11-09)
 ------------------
 

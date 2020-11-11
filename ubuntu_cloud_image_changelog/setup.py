@@ -38,11 +38,11 @@ setup(
     long_description=readme + "\n\n" + history,
     include_package_data=True,
     keywords="ubuntu_cloud_image_changelog",
-    name="ubuntu_cloud_image_changelog",
+    name="ubuntu-cloud-image-changelog",
     packages=find_packages(
         include=["ubuntu_cloud_image_changelog", "ubuntu_cloud_image_changelog.*"]
     ),
     url="https://github.com/CanonicalLtd/ubuntu_cloud_image_changelog",
-    version="0.8.0",
+    version="0.8.1",
     zip_safe=False,
 )
