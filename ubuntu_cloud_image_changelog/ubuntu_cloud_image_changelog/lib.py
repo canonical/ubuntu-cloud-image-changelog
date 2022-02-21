@@ -97,7 +97,7 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                     if from_version in changelog_block_versions:
                         end = True
                         break
-                if not end:
+                if (not from_versions and not to_versions) or (start and not end):
                     launchpad_bugs_fixed += changelog_block.lp_bugs_closed
                     changeblock_summary = "{} ({}) {}; urgency={}".format(
                         changelog_block.package,
