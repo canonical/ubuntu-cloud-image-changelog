@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 import click
-import launchpadagent
+from ubuntu_cloud_image_changelog import launchpadagent
 
 from ubuntu_cloud_image_changelog import lib
 
@@ -180,7 +180,7 @@ def main(
 
         # for each of the deb package diffs and new packages download the
         # changelog
-        with tempfile.TemporaryDirectory() as tmp_cache_directory:
+        with tempfile.TemporaryDirectory(prefix="ubuntu-cloud-image-changelog") as tmp_cache_directory:
             launchpad = launchpadagent.get_launchpad(
                 launchpadlib_dir=tmp_cache_directory,
                 lp_credentials_store=lp_credentials_store,
