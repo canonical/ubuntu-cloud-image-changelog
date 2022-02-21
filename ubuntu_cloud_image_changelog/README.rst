@@ -34,7 +34,7 @@ Usage
 -----
 
 ```
-ubuntu-cloud-image-changelog --from-manifest manifest1.manifest --to-manifest manifest2.manifest
+ubuntu-cloud-image-changelog --from-manifest manifest1.manifest --to-manifest manifest2.manifest --series focal
 ```
 
 If Packages in manifest are known to have been installed from this PPA then you can pass one of more PPAs to ubuntu-cloud-image-changelog for the changelog for those packages to be included in the output.
@@ -43,7 +43,7 @@ If Packages in manifest are known to have been installed from this PPA then you 
 --ppa
 ```
 
-Expected format is 'https://launchpad.net/~%LAUNCHPAD_USERNAME%/+archive/ubuntu/%PPA_NAME%'
+Expected format is '%LAUNCHPAD_USERNAME%/%PPA_NAME%' eg. philroche/cloud-init
 
 Features
 --------
