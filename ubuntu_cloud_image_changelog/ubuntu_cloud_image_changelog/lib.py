@@ -1,9 +1,7 @@
 """Main module."""
 import os
 import logging
-import subprocess
 import urllib.parse
-from debian import deb822
 from debian.changelog import Changelog
 from debian.debian_support import Version
 
@@ -38,6 +36,7 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                 "{}:".format(from_version_obj.epoch), ""
             )
             from_versions.append(from_version_without_epoch)
+
         to_versions.append(to_version)
         to_version_obj = Version(to_version)
         if to_version_obj.epoch:
@@ -53,6 +52,14 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
             from_versions.append(from_version[0 : from_version.index("+")])
         if "+" in to_version:
             to_versions.append(to_version[0 : to_version.index("+")])
+
+        # An Ubuntu version might have ~ suffix. Remove this as it might not
+        # always appear in the changelog
+        if "~" in from_version:
+            from_versions.append(from_version[0 : from_version.index("~")])
+        if "~" in to_version:
+            to_versions.append(to_version[0 : to_version.index("~")])
+
         count = None
 
     with open(changelog_filename, "r") as fileptr:
@@ -71,20 +78,34 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
             change_blocks = []
             launchpad_bugs_fixed = []
             for changelog_block in parsed_changelog:
-                if changelog_block.version in to_versions:
-                    start = True
-                    change_blocks = []
-                if changelog_block.version in from_versions:
-                    end = True
-                    break
-                launchpad_bugs_fixed += changelog_block.lp_bugs_closed
-                changeblock_summary = "{} ({}) {}; urgency={}".format(
-                    changelog_block.package,
-                    changelog_block.version,
-                    changelog_block.distributions,
-                    changelog_block.urgency,
-                )
-                change_blocks.append((changeblock_summary, changelog_block))
+                changelog_block_versions = []
+                changelog_block_versions.append(changelog_block.version.full_version)
+                if "~" in changelog_block.version.full_version:
+                    changelog_block_versions.append(changelog_block.version.full_version[0: changelog_block.version.full_version.index("~")])
+                if "+" in changelog_block.version.full_version:
+                    changelog_block_versions.append(changelog_block.version.full_version[0: changelog_block.version.full_version.index("+")])
+                if changelog_block.version.epoch:
+                    changelog_block_version_without_epoch = changelog_block.version.full_version.replace(
+                        "{}:".format(changelog_block.version.epoch), ""
+                    )
+                    changelog_block_versions.append(changelog_block_version_without_epoch)
+                for to_version in to_versions:
+                    if to_version in changelog_block_versions:
+                        start = True
+                        break
+                for from_version in from_versions:
+                    if from_version in changelog_block_versions:
+                        end = True
+                        break
+                if not end:
+                    launchpad_bugs_fixed += changelog_block.lp_bugs_closed
+                    changeblock_summary = "{} ({}) {}; urgency={}".format(
+                        changelog_block.package,
+                        changelog_block.version,
+                        changelog_block.distributions,
+                        changelog_block.urgency,
+                    )
+                    change_blocks.append((changeblock_summary, changelog_block))
 
             changelog += "Launchpad-Bugs-Fixed: {}\n".format(launchpad_bugs_fixed)
             changelog += "Changes:\n"
@@ -137,7 +158,15 @@ def get_changelog(
     :param str image_architecture: Architecture of the image which the manifest belongs to
     :rtype: str
     """
-
+    # If there is an epoch in the installed binary package version then it
+    # will not appear in the source versions in the changelog.
+    # As such we can remove before downloading the changelogs.
+    package_version_obj = Version(package_version)
+    if package_version_obj.epoch:
+        package_version_without_epoch = package_version_obj.full_version.replace(
+            "{}:".format(package_version_obj.epoch), ""
+        )
+        package_version = package_version_without_epoch
     # packages ending with ':amd64' or ':arm64' are special
     binary_package_name = arch_independent_package_name(binary_package_name)
 
