@@ -6,6 +6,28 @@ from debian.changelog import Changelog
 from debian.debian_support import Version
 
 
+def package_version_variants(package_version):
+    all_package_version_variants = []
+    all_package_version_variants.append(package_version)
+    package_version_obj = Version(package_version)
+    # package versions in a changelog may or may not include the epoch
+    if package_version_obj.epoch:
+        package_version_without_epoch = package_version_obj.full_version.replace(
+            "{}:".format(package_version_obj.epoch), ""
+        )
+        all_package_version_variants.append(package_version_without_epoch)
+    # shim-signed is a special package as it appends the version of the
+    # binary shim from Microsoft. This full version will not appear in
+    # the manifest so we can safely remove anything after the binary
+    # shim version.
+    if "+" in package_version:
+        all_package_version_variants.append(package_version[0: package_version.index("+")])
+    # An Ubuntu version might have ~ suffix. Remove this as it might not
+    # always appear in the changelog
+    if "~" in package_version:
+        all_package_version_variants.append(package_version[0: package_version.index("~")])
+    return all_package_version_variants
+
 def arch_independent_package_name(package_name):
     # packages ending with ':amd64' or ':arm64' are special
     if package_name.endswith(":amd64") or package_name.endswith(":arm64"):
@@ -28,38 +50,8 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
     from_versions = []
     to_versions = []
     if from_version and to_version:
-        # package versions in a changelog may or may not include the epoch
-        from_versions.append(from_version)
-        from_version_obj = Version(from_version)
-        if from_version_obj.epoch:
-            from_version_without_epoch = from_version_obj.full_version.replace(
-                "{}:".format(from_version_obj.epoch), ""
-            )
-            from_versions.append(from_version_without_epoch)
-
-        to_versions.append(to_version)
-        to_version_obj = Version(to_version)
-        if to_version_obj.epoch:
-            to_version_without_epoch = to_version_obj.full_version.replace(
-                "{}:".format(to_version_obj.epoch), ""
-            )
-            to_versions.append(to_version_without_epoch)
-        # shim-signed is a special package as it appends the version of the
-        # binary shim from Microsoft. This full version will not appear in
-        # the manifest so we can safely remove anything after the binary
-        # shim version.
-        if "+" in from_version:
-            from_versions.append(from_version[0 : from_version.index("+")])
-        if "+" in to_version:
-            to_versions.append(to_version[0 : to_version.index("+")])
-
-        # An Ubuntu version might have ~ suffix. Remove this as it might not
-        # always appear in the changelog
-        if "~" in from_version:
-            from_versions.append(from_version[0 : from_version.index("~")])
-        if "~" in to_version:
-            to_versions.append(to_version[0 : to_version.index("~")])
-
+        from_versions = package_version_variants(from_version)
+        to_versions = package_version_variants(to_version)
         count = None
 
     with open(changelog_filename, "r") as fileptr:
@@ -78,17 +70,7 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
             change_blocks = []
             launchpad_bugs_fixed = []
             for changelog_block in parsed_changelog:
-                changelog_block_versions = []
-                changelog_block_versions.append(changelog_block.version.full_version)
-                if "~" in changelog_block.version.full_version:
-                    changelog_block_versions.append(changelog_block.version.full_version[0: changelog_block.version.full_version.index("~")])
-                if "+" in changelog_block.version.full_version:
-                    changelog_block_versions.append(changelog_block.version.full_version[0: changelog_block.version.full_version.index("+")])
-                if changelog_block.version.epoch:
-                    changelog_block_version_without_epoch = changelog_block.version.full_version.replace(
-                        "{}:".format(changelog_block.version.epoch), ""
-                    )
-                    changelog_block_versions.append(changelog_block_version_without_epoch)
+                changelog_block_versions = package_version_variants(changelog_block.version.full_version)
                 for to_version in to_versions:
                     if to_version in changelog_block_versions:
                         start = True
