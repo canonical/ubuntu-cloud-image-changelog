@@ -21,12 +21,17 @@ def package_version_variants(package_version):
     # the manifest so we can safely remove anything after the binary
     # shim version.
     if "+" in package_version:
-        all_package_version_variants.append(package_version[0: package_version.index("+")])
+        all_package_version_variants.append(
+            package_version[0 : package_version.index("+")]
+        )
     # An Ubuntu version might have ~ suffix. Remove this as it might not
     # always appear in the changelog
     if "~" in package_version:
-        all_package_version_variants.append(package_version[0: package_version.index("~")])
+        all_package_version_variants.append(
+            package_version[0 : package_version.index("~")]
+        )
     return all_package_version_variants
+
 
 def arch_independent_package_name(package_name):
     # packages ending with ':amd64' or ':arm64' are special
@@ -71,7 +76,9 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
             change_blocks = []
             launchpad_bugs_fixed = []
             for changelog_block in parsed_changelog:
-                changelog_block_versions = package_version_variants(changelog_block.version.full_version)
+                changelog_block_versions = package_version_variants(
+                    changelog_block.version.full_version
+                )
                 for to_version in to_versions:
                     if to_version in changelog_block_versions:
                         start = True
