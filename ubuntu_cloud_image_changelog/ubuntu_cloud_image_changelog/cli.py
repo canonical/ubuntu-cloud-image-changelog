@@ -3,11 +3,22 @@ import os
 import sys
 import tempfile
 import click
+from ubuntu_cloud_image_changelog import launchpadagent
 
 from ubuntu_cloud_image_changelog import lib
 
 
 @click.command()
+@click.option(
+    "--lp-credentials-store",
+    envvar="LP_CREDENTIALS_STORE",
+    required=False,
+    help="An optional path to an already configured launchpad credentials store.",
+    default=None,
+)
+@click.option(
+    "--series", help='the Ubuntu series eg. "20.04" or "focal"', required=True
+)
 @click.option(
     "--from-manifest",
     required=True,
@@ -40,11 +51,20 @@ from ubuntu_cloud_image_changelog import lib
     type=click.STRING,
     help="Packages in manifest are known to have been installed from this PPA."
     "Expected format is "
-    "'https://launchpad.net/~%LAUNCHPAD_USERNAME%/+archive/ubuntu/%PPA_NAME%'"
+    "'%LAUNCHPAD_USERNAME%/%PPA_NAME%' eg. philroche/cloud-init"
     "Multiple --ppa options can be specified",
 )
-def main(from_manifest, to_manifest, ppas):
-    # type: (Text, Text, List) -> None
+@click.option(
+    "--image-architecture",
+    help="The architecture of the image to use when querying package "
+    "version in the archive/ppa. The default is amd64",
+    default="amd64",
+    show_default=True,
+)
+def main(
+    lp_credentials_store, series, from_manifest, to_manifest, ppas, image_architecture
+):
+    # type: (Text, Text, Text, Text, List) -> None
     """"""
     from_manifest_lines = from_manifest.readlines()
     to_manifest_lines = to_manifest.readlines()
@@ -69,6 +89,8 @@ def main(from_manifest, to_manifest, ppas):
             package = package.replace(snap_package_prefix, "")
             from_snap_packages[package] = version[1]
         else:
+            # packages ending with ':amd64' or ':arm64' are special
+            package = lib.arch_independent_package_name(package)
             from_deb_packages[package] = version[0]
 
     # parse the to manifest
@@ -78,6 +100,8 @@ def main(from_manifest, to_manifest, ppas):
             package = package.replace(snap_package_prefix, "")
             to_snap_packages[package] = version[1]
         else:
+            # packages ending with ':amd64' or ':arm64' are special
+            package = lib.arch_independent_package_name(package)
             to_deb_packages[package] = version[0]
 
     # Are there any snap package diffs?
@@ -156,30 +180,32 @@ def main(from_manifest, to_manifest, ppas):
 
         # for each of the deb package diffs and new packages download the
         # changelog
-        with tempfile.TemporaryDirectory() as tmp_cache_directory:
+        with tempfile.TemporaryDirectory(prefix="ubuntu-cloud-image-changelog") as tmp_cache_directory:
+            launchpad = launchpadagent.get_launchpad(
+                launchpadlib_dir=tmp_cache_directory,
+                lp_credentials_store=lp_credentials_store,
+            )
+            ubuntu = launchpad.distributions["ubuntu"]
+            lp_series = ubuntu.getSeries(name_or_version=series)
+            lp_arch_series = lp_series.getDistroArchSeries(archtag=image_architecture)
             for package in added_deb_packages:
-                (
-                    package_changelog_file,
-                    valid_changelog,
-                    valid_ppa_changes,
-                ) = lib.get_changelog(
-                    tmp_cache_directory, package, to_deb_packages[package], ppas
+
+                package_changelog_file = lib.get_changelog(
+                    launchpad,
+                    ubuntu,
+                    lp_series,
+                    lp_arch_series,
+                    tmp_cache_directory,
+                    package,
+                    to_deb_packages[package],
+                    ppas,
                 )
-                if valid_changelog:
-                    # get the most recent changelog entry
-                    version_diff_changelog = lib.parse_changelog(
-                        package_changelog_file, count=1
-                    )
-                elif valid_ppa_changes:
-                    # get the most recent changes entry
-                    version_diff_changelog = lib.parse_ppa_changes(
-                        package_changelog_file
-                    )
-                else:
-                    with open(
-                        package_changelog_file, "rb"
-                    ) as unparsed_invalid_changelog_file:
-                        version_diff_changelog = unparsed_invalid_changelog_file.read()
+
+                # get the most recent changelog entry
+                version_diff_changelog = lib.parse_changelog(
+                    package_changelog_file, count=1
+                )
+
                 click.echo(
                     "==========================================================="
                     "==========================================================="
@@ -193,26 +219,23 @@ def main(from_manifest, to_manifest, ppas):
                 click.echo(version_diff_changelog)
 
             for package, from_to in deb_package_diffs.items():
-                (
-                    package_changelog_file,
-                    valid_changelog,
-                    valid_ppa_changes,
-                ) = lib.get_changelog(tmp_cache_directory, package, from_to["to"], ppas)
-                if valid_changelog:
-                    # get changelog just between the from and to version
-                    version_diff_changelog = lib.parse_changelog(
-                        package_changelog_file, from_to["from"], from_to["to"]
-                    )
-                elif valid_ppa_changes:
-                    # get the most recent changes entry
-                    version_diff_changelog = lib.parse_ppa_changes(
-                        package_changelog_file
-                    )
-                else:
-                    with open(
-                        package_changelog_file, "rb"
-                    ) as unparsed_invalid_changelog_file:
-                        version_diff_changelog = unparsed_invalid_changelog_file.read()
+
+                package_changelog_file = lib.get_changelog(
+                    launchpad,
+                    ubuntu,
+                    lp_series,
+                    lp_arch_series,
+                    tmp_cache_directory,
+                    package,
+                    from_to["to"],
+                    ppas,
+                )
+
+                # get changelog just between the from and to version
+                version_diff_changelog = lib.parse_changelog(
+                    package_changelog_file, from_to["from"], from_to["to"]
+                )
+
                 click.echo(
                     "==========================================================="
                     "==========================================================="
