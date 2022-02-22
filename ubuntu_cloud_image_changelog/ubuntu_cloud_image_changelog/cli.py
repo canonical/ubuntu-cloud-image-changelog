@@ -174,7 +174,7 @@ def main(
             )
             click.echo()
 
-    if deb_package_diffs:
+    if deb_package_diffs or added_deb_packages:
 
         click.echo("\n** Changelogs for added and changed deb packages " "below: **\n")
 
@@ -203,7 +203,7 @@ def main(
 
                 # get the most recent changelog entry
                 version_diff_changelog = lib.parse_changelog(
-                    package_changelog_file, count=1
+                    package_changelog_file, to_version=to_deb_packages[package], count=1
                 )
 
                 click.echo(
@@ -233,7 +233,7 @@ def main(
 
                 # get changelog just between the from and to version
                 version_diff_changelog = lib.parse_changelog(
-                    package_changelog_file, from_to["from"], from_to["to"]
+                    package_changelog_file, from_to["from"], from_to["to"], count=None
                 )
 
                 click.echo(

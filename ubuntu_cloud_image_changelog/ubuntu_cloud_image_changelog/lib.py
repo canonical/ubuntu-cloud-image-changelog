@@ -49,13 +49,14 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
     # Set max_blocks to none if we know the versions we want changelog for
     from_versions = []
     to_versions = []
-    if from_version and to_version:
+
+    if from_version:
         from_versions = package_version_variants(from_version)
+    if to_version:
         to_versions = package_version_variants(to_version)
-        count = None
 
     with open(changelog_filename, "r") as fileptr:
-        parsed_changelog = Changelog(fileptr.read(), max_blocks=count)
+        parsed_changelog = Changelog(fileptr.read())
         start = False
         end = False
         try:
@@ -79,7 +80,7 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                     if from_version in changelog_block_versions:
                         end = True
                         break
-                if (not from_versions and not to_versions) or (start and not end):
+                if start and not end:
                     launchpad_bugs_fixed += changelog_block.lp_bugs_closed
                     changeblock_summary = "{} ({}) {}; urgency={}".format(
                         changelog_block.package,
@@ -88,6 +89,9 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                         changelog_block.urgency,
                     )
                     change_blocks.append((changeblock_summary, changelog_block))
+                if count and len(change_blocks) == count:
+                    end = True
+                    break  # we have enough blocks now
 
             changelog += "Launchpad-Bugs-Fixed: {}\n".format(launchpad_bugs_fixed)
             changelog += "Changes:\n"
