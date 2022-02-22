@@ -7,7 +7,7 @@ description: |
   using their package manifests.
 
   Usage:
-  ubuntu-cloud-image-changelog --from-manifest manifest1.manifest --to-manifest manifest2.manifest
+  ubuntu-cloud-image-changelog --from-manifest manifest1.manifest --to-manifest manifest2.manifest --series=focal
 
 grade: stable
 confinement: strict
