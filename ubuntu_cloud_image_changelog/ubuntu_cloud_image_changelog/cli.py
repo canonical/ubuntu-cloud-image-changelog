@@ -17,7 +17,10 @@ from ubuntu_cloud_image_changelog import lib
     default=None,
 )
 @click.option(
-    "--series", help='the Ubuntu series eg. "20.04" or "focal"', required=True
+    "--from-series", help='the Ubuntu series eg. "20.04" or "focal"', required=True
+)
+@click.option(
+    "--to-series", help='the Ubuntu series eg. "20.04" or "focal"', required=True
 )
 @click.option(
     "--from-manifest",
@@ -62,9 +65,9 @@ from ubuntu_cloud_image_changelog import lib
     show_default=True,
 )
 def main(
-    lp_credentials_store, series, from_manifest, to_manifest, ppas, image_architecture
+    lp_credentials_store, from_series, to_series, from_manifest, to_manifest, ppas, image_architecture
 ):
-    # type: (Text, Text, Text, Text, List) -> None
+    # type: (Text, Text, Text, Text, Text, List) -> None
     """"""
     from_manifest_lines = from_manifest.readlines()
     to_manifest_lines = to_manifest.readlines()
@@ -188,24 +191,26 @@ def main(
                 lp_credentials_store=lp_credentials_store,
             )
             ubuntu = launchpad.distributions["ubuntu"]
-            lp_series = ubuntu.getSeries(name_or_version=series)
-            lp_arch_series = lp_series.getDistroArchSeries(archtag=image_architecture)
+            to_lp_series = ubuntu.getSeries(name_or_version=to_series)
+            from_lp_series = ubuntu.getSeries(name_or_version=from_series)
+            to_lp_arch_series = to_lp_series.getDistroArchSeries(archtag=image_architecture)
+            from_lp_arch_series = from_lp_series.getDistroArchSeries(archtag=image_architecture)
             for package in added_deb_packages:
-
+                to_source_package_name, to_source_package_version = lib.get_source_package_details(
+                    ubuntu, launchpad, to_lp_arch_series, package, to_deb_packages[package], ppas)
                 package_changelog_file = lib.get_changelog(
                     launchpad,
                     ubuntu,
-                    lp_series,
-                    lp_arch_series,
+                    to_lp_series,
                     tmp_cache_directory,
-                    package,
-                    to_deb_packages[package],
+                    to_source_package_name,
+                    to_source_package_version,
                     ppas,
                 )
 
                 # get the most recent changelog entry
                 version_diff_changelog = lib.parse_changelog(
-                    package_changelog_file, to_version=to_deb_packages[package], count=1
+                    package_changelog_file, to_version=to_source_package_version, count=1
                 )
 
                 click.echo(
@@ -213,8 +218,8 @@ def main(
                     "==========================================================="
                 )
                 click.echo(
-                    "{} version {} was added. Below is the most recent changelog entry".format(
-                        package, to_deb_packages[package]
+                    "{} version '{}' (source package {} version '{}') was added. Below is the most recent changelog entry".format(
+                        package, to_deb_packages[package], to_source_package_name, to_source_package_version
                     )
                 )
                 click.echo()
@@ -222,20 +227,23 @@ def main(
 
             for package, from_to in deb_package_diffs.items():
 
+                from_source_package_name, from_source_package_version = lib.get_source_package_details(ubuntu, launchpad, from_lp_arch_series, package, from_to["from"], ppas)
+                to_source_package_name, to_source_package_version = lib.get_source_package_details(ubuntu, launchpad, to_lp_arch_series, package, from_to["to"], ppas)
+
                 package_changelog_file = lib.get_changelog(
                     launchpad,
                     ubuntu,
-                    lp_series,
-                    lp_arch_series,
+                    to_lp_series,
                     tmp_cache_directory,
-                    package,
-                    from_to["to"],
+                    to_source_package_name,
+                    to_source_package_version,
                     ppas,
                 )
 
+
                 # get changelog just between the from and to version
                 version_diff_changelog = lib.parse_changelog(
-                    package_changelog_file, from_to["from"], from_to["to"], count=None
+                    package_changelog_file, from_version=from_source_package_version, to_version=to_source_package_version, count=None
                 )
 
                 click.echo(
@@ -243,8 +251,12 @@ def main(
                     "==========================================================="
                 )
                 click.echo(
-                    "{} changed from version '{}' to version '{}'".format(
-                        package, from_to["from"], from_to["to"]
+                    "{} changed from version '{}' to version '{}' (source package changed from {} version '{}' to {} version '{}')".format(
+                        package, from_to["from"], from_to["to"],
+                        from_source_package_name,
+                        from_source_package_version,
+                        to_source_package_name,
+                        to_source_package_version,
                     )
                 )
                 click.echo()
