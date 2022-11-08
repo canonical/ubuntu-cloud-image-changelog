@@ -1,9 +1,13 @@
 """Main module."""
 import os
 import logging
+import re
 import urllib.parse
+
+import click
 from debian.changelog import Changelog
 from debian.debian_support import Version
+from lazr.restfulclient.errors import NotFound
 
 
 def get_source_package_details(ubuntu, launchpad, lp_arch_series, binary_package_name, binary_package_version, ppas):
@@ -43,7 +47,12 @@ def get_source_package_details(ubuntu, launchpad, lp_arch_series, binary_package
                 # now get the source package name so we can get the changelog
                 source_package_name = binaries[0].source_package_name
                 source_package_version = binaries[0].source_package_version
-
+    if not source_package_name or not source_package_version:
+        raise click.ClickException(
+            "Unable to find source package for {} {}".format(
+                binary_package_name, binary_package_version
+            )
+        )
     return source_package_name, source_package_version
 
 
@@ -54,7 +63,77 @@ def arch_independent_package_name(package_name):
     return package_name
 
 
-def parse_changelog(changelog_filename, from_version=None, to_version=None, count=1):
+def _parse_cve_details(changelog_block, launchpad):
+    changelog_block_cves = []
+    for change in changelog_block:
+        if 'CVE' in change:
+            cve_pos = [(m.start(), m.end()) for m in re.finditer(r'CVE-\d+-\d+', change)]
+            for start, end in cve_pos:
+                cve = change[start:end].strip()
+                if cve not in [changelog_block_cve['cve']
+                               for changelog_block_cve in changelog_block_cves]:
+                    cve_details = {}
+                    cve_details['cve'] = cve
+                    cve_details['url'] = _get_cve_url(cve)
+                    cve_details_lines = _get_cve_details(cve, launchpad)
+                    cve_ubuntu_description = ''
+                    cve_priority = 'n/a'
+                    cve_description = ''
+                    cve_public_date = ''
+                    for cve_details_line in cve_details_lines:
+                        # only get the CVE description if the user has requested it
+                        if not cve_ubuntu_description and cve_details_line.startswith('Ubuntu-Description:'):
+                            # get the string in the line after the Ubuntu-Description: line
+                            # while the next line is not 'Notes' keep appending to cve_description
+                            while True:
+                                next_line = next(cve_details_lines)
+                                if next_line.startswith('Notes'):
+                                    break
+                                cve_ubuntu_description += next_line
+                        if not cve_description and cve_details_line.startswith('Description:'):
+                            # get the string in the line after the Description: line
+                            # while the next line is not 'Notes' keep appending to cve_description
+                            while True:
+                                next_line = next(cve_details_lines)
+                                if next_line.startswith('Ubuntu-Description:'):
+                                    break
+                                cve_description += next_line
+                        if 'Priority:' in cve_details_line:
+                            cve_priority = cve_details_line.split('Priority:')[1].strip()
+                        if 'PublicDate:' in cve_details_line:
+                            cve_public_date = cve_details_line.split('PublicDate:')[1].strip()
+
+                    cve_details['cve_description'] = cve_ubuntu_description.lstrip() \
+                        if cve_ubuntu_description else cve_description.lstrip()
+                    cve_details['cve_priority'] = cve_priority
+                    cve_details['cve_public_date'] = cve_public_date
+                    changelog_block_cves.append(cve_details)
+    return changelog_block_cves
+
+
+def _get_cve_url(cve_number):
+    """ returns a url to CVE data from a cve number """
+    url = "https://ubuntu.com/security"
+    return "{}/{}".format(url, cve_number)
+
+
+def _get_cve_details(cve, launchpad):
+    # download the cve details and parse so we can get the CVE description and the CVE priority
+    cve_details_lines = []
+    possible_cve_detail_locations = ['active', 'retired', 'ignored']
+    for possible_cve_detail_location in possible_cve_detail_locations:
+        try:
+            cve_details_url = 'https://git.launchpad.net/ubuntu-cve-tracker/plain/{}/{}'.format(
+                possible_cve_detail_location, cve)
+            cve_details_resp = launchpad._browser.get(cve_details_url).decode('utf-8')
+            cve_details_lines = iter(cve_details_resp.splitlines())
+            return cve_details_lines
+        except NotFound:
+            pass  # Keep trying until we find the cve details
+    return cve_details_lines
+
+
+def parse_changelog(launchpad, changelog_filename, from_version=None, to_version=None, count=1, highlight_cves=False):
     """
     Extract changelog entries within a version range
 
@@ -65,7 +144,7 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
     a non-empty error message is returned to indicate the issue.
     """
     changelog = ""
-
+    changelogs = []
     if not to_version:
         raise Exception("to_version must be specified when parsing changelog")
 
@@ -78,10 +157,10 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
             changelog += "Urgency: {}\n".format(parsed_changelog.urgency)
             changelog += "Maintainer: {}\n".format(parsed_changelog.author)
             changelog += "Date: {}\n".format(parsed_changelog.date)
-
             # The changelog blocks are in reverse order; we'll see high|to before low|from.
             change_blocks = []
             launchpad_bugs_fixed = []
+            cves_referenced = []
             for changelog_block in parsed_changelog:
                 if changelog_block.version:
                     # if changelog_block.version is None then this is a
@@ -95,6 +174,12 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                             break
 
                     if changelog_version_equal_to_or_before_to_version:
+                        changelog_dict = {}
+                        # Attempt to parse theCVEs referenced in the changelo entries
+                        if highlight_cves:
+                            cves = _parse_cve_details(changelog_block.changes(), launchpad)
+                            cves_referenced += cves
+                            changelog_dict['cves'] = cves
                         launchpad_bugs_fixed += changelog_block.lp_bugs_closed
                         changeblock_summary = "{} ({}) {}; urgency={}".format(
                             changelog_block.package,
@@ -103,6 +188,18 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                             changelog_block.urgency,
                         )
                         change_blocks.append((changeblock_summary, changelog_block))
+                        changelog_dict['log'] = []
+                        for change in changelog_block.changes():
+                            changelog_dict['log'].append(change)
+                        changelog_dict['package'] = changelog_block.package
+                        changelog_dict['version'] = str(changelog_block.version)
+                        changelog_dict['urgency'] = changelog_block.urgency
+                        changelog_dict['distributions'] = changelog_block.distributions
+                        changelog_dict['launchpad_bugs_fixed'] = changelog_block.lp_bugs_closed
+                        changelog_dict['author'] = changelog_block.author
+                        changelog_dict['date'] = changelog_block.date
+
+                        changelogs.append(changelog_dict)
                     if count and len(change_blocks) == count:
                         break  # we have enough blocks now
 
@@ -126,7 +223,7 @@ def parse_changelog(changelog_filename, from_version=None, to_version=None, coun
                 "Unable to parse package changelog {}".format(changelog_filename)
             )
 
-        return changelog
+        return changelog, cves_referenced, changelogs
 
 
 def get_changelog(
