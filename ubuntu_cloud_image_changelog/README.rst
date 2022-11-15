@@ -52,12 +52,6 @@ Expected format is '%LAUNCHPAD_USERNAME%/%PPA_NAME%' eg. philroche/cloud-init
 Highlight the CVEs referenced in each individual changelog entry
 
 ```
---highlight-cves-show-cve-description
-```
-
-When highlighting CVEs, show the CVE description. `--highlight-cves` must also be used for this to take affect.
-
-```
 --output-json changelog.json
 ```
 

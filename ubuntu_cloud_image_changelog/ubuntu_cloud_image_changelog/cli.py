@@ -73,13 +73,6 @@ from ubuntu_cloud_image_changelog import lib
     default=False,
 )
 @click.option(
-    "--highlight-cves-show-cve-description",
-    help="When highlighting CVEs, show the CVE description. "
-    "`--highlight-cves` must also be used for this to take affect.",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--output-json",
     help="Output the changelog in JSON format to the specified file",
     type=click.Path(exists=False, dir_okay=False, writable=True),
@@ -101,7 +94,6 @@ def main(
     ppas,
     image_architecture,
     highlight_cves,
-    highlight_cves_show_cve_description,
     output_json,
     output_json_pretty,
 ):
@@ -357,9 +349,7 @@ def main(
                                     fg=cve_priority_color,
                                     bold=cve_priority_bold,
                                 ),
-                                ": {}".format(cve_referenced["cve_description"])
-                                if highlight_cves_show_cve_description
-                                else "",
+                                ": {}".format(cve_referenced["cve_description"]),
                             )
                         )
                         changelog["added"]["deb"][package]["cves"].append(
@@ -468,9 +458,7 @@ def main(
                                     fg=cve_priority_color,
                                     bold=cve_priority_bold,
                                 ),
-                                ": {}".format(cve_referenced["cve_description"])
-                                if highlight_cves_show_cve_description
-                                else "",
+                                ": {}".format(cve_referenced["cve_description"]),
                             )
                         )
                         changelog["diff"]["deb"][package]["cves"].append(cve_referenced)
