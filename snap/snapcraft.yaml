@@ -1,5 +1,5 @@
 name: ubuntu-cloud-image-changelog
-version: '0.10.0'
+version: '0.12.0'
 base: core20
 summary: Helpful utility to generate package changelog between two cloud images
 description: |
@@ -7,7 +7,7 @@ description: |
   using their package manifests.
 
   Usage:
-  ubuntu-cloud-image-changelog --from-manifest manifest1.manifest --to-manifest manifest2.manifest --series=focal
+  ubuntu-cloud-image-changelog --from-manifest manifest1.manifest --to-manifest manifest2.manifest --from-series=focal --to-series=focal
 
 grade: stable
 confinement: strict

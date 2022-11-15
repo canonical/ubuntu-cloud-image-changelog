@@ -10,7 +10,7 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-requirements = ["Click>=7.0", "python-debian", 'launchpadlib']
+requirements = ["Click>=7.0", "colorama", "python-debian", "launchpadlib"]
 
 setup(
     author="Philip Roche",
@@ -43,6 +43,6 @@ setup(
         include=["ubuntu_cloud_image_changelog", "ubuntu_cloud_image_changelog.*"]
     ),
     url="https://github.com/CanonicalLtd/ubuntu_cloud_image_changelog",
-    version="0.10.0",
+    version="0.12.0",
     zip_safe=False,
 )
