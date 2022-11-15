@@ -43,6 +43,6 @@ setup(
         include=["ubuntu_cloud_image_changelog", "ubuntu_cloud_image_changelog.*"]
     ),
     url="https://github.com/CanonicalLtd/ubuntu_cloud_image_changelog",
-    version="0.12.0",
+    version="0.12.1",
     zip_safe=False,
 )
