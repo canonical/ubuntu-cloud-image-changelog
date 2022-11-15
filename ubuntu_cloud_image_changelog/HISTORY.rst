@@ -2,6 +2,12 @@
 History
 =======
 
+0.12.1 (2022-11-15)
+------------------
+
+* Added support for JSON output
+* Added support for including CVE details in the JSON and text output
+
 0.8.1 (2020-11-11)
 ------------------
 
