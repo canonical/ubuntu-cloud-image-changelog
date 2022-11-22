@@ -30,7 +30,7 @@ setup(
     description="Helpful utility to generate package changelog between two cloud images",
     entry_points={
         "console_scripts": [
-            "ubuntu-cloud-image-changelog=ubuntu_cloud_image_changelog.cli:main",
+            "ubuntu-cloud-image-changelog=ubuntu_cloud_image_changelog.cli:cli",
         ],
     },
     install_requires=requirements,
