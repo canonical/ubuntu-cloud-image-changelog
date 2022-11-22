@@ -9,3 +9,4 @@ coverage
 Sphinx
 twine
 Click
+isort
