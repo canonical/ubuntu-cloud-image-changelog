@@ -9,7 +9,8 @@ import click
 from debian.changelog import Changelog
 from debian.debian_support import Version
 from lazr.restfulclient.errors import NotFound
-from models import Change
+
+from ubuntu_cloud_image_changelog.models import Change
 
 
 def get_source_package_details(ubuntu, launchpad, lp_arch_series, binary_package_name, binary_package_version, ppas):

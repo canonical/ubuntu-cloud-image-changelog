@@ -4,7 +4,9 @@ import tempfile
 from typing import List, Optional
 
 import click
-from models import (
+
+from ubuntu_cloud_image_changelog import launchpadagent, lib
+from ubuntu_cloud_image_changelog.models import (
     Added,
     ChangelogModel,
     DebPackage,
@@ -17,8 +19,6 @@ from models import (
     Summary,
     ToVersion,
 )
-
-from ubuntu_cloud_image_changelog import launchpadagent, lib
 
 
 @click.group()
