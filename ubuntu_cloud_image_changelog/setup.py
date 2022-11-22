@@ -2,7 +2,7 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.rst") as readme_file:
     readme = readme_file.read()
@@ -10,7 +10,7 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-requirements = ["Click>=7.0", "colorama", "python-debian", "launchpadlib"]
+requirements = ["Click>=7.0", "colorama", "launchpadlib", "pydantic", "python-debian"]
 
 setup(
     author="Philip Roche",
@@ -39,10 +39,8 @@ setup(
     include_package_data=True,
     keywords="ubuntu_cloud_image_changelog",
     name="ubuntu-cloud-image-changelog",
-    packages=find_packages(
-        include=["ubuntu_cloud_image_changelog", "ubuntu_cloud_image_changelog.*"]
-    ),
-    url="https://github.com/CanonicalLtd/ubuntu_cloud_image_changelog",
+    packages=find_packages(include=["ubuntu_cloud_image_changelog", "ubuntu_cloud_image_changelog.*"]),
+    url="https://github.com/CanonicalLtd/ubuntu-cloud-image-changelog",
     version="0.12.2",
     zip_safe=False,
 )

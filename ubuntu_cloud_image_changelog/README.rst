@@ -65,10 +65,11 @@ Pretty print JSON output with 4 character indentation.  `--output-json` must als
 
 
 TODO
---------
+----
 
 * There are opportunities to improve performance by parallelizing the source package changelog queries and parsing.
-
+* Refactor the generate function as it is way too long and complex.
+* Add tests for the generate function.
 
 Credits
 -------

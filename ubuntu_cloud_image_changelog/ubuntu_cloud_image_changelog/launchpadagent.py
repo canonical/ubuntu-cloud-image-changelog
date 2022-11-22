@@ -1,10 +1,13 @@
 import os
 import sys
 import time
-from launchpadlib.credentials import RequestTokenAuthorizationEngine
-from lazr.restfulclient.errors import HTTPError
+
+from launchpadlib.credentials import (
+    RequestTokenAuthorizationEngine,
+    UnencryptedFileCredentialStore,
+)
 from launchpadlib.launchpad import Launchpad
-from launchpadlib.credentials import UnencryptedFileCredentialStore
+from lazr.restfulclient.errors import HTTPError
 
 ACCESS_TOKEN_POLL_TIME = 1
 WAITING_FOR_USER = """Open this link:
@@ -56,9 +59,7 @@ def get_launchpad(launchpadlib_dir=None, lp_credentials_store=None):
     the default"""
     if not lp_credentials_store:
         creds_prefix = os.environ.get("SNAP_USER_COMMON", os.path.expanduser("~"))
-        store = UnencryptedFileCredentialStore(
-            os.path.join(creds_prefix, ".launchpad.credentials")
-        )
+        store = UnencryptedFileCredentialStore(os.path.join(creds_prefix, ".launchpad.credentials"))
     else:
         store = UnencryptedFileCredentialStore(lp_credentials_store)
     lp_app = "ubuntu-cloud-image-changelog"
