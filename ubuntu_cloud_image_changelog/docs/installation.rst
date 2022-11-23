@@ -12,7 +12,7 @@ To install ubuntu-cloud-image-changelog, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install ubuntu_cloud_image_changelog
+    $ python3 -m pip install ubuntu_cloud_image_changelog
 
 This is the preferred method to install ubuntu-cloud-image-changelog, as it will always install the most recent stable release.
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/philroche/ubuntu_cloud_image_changelog
+    $ git clone git://github.com/CanonicalLtd/ubuntu-cloud-image-changelog
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/philroche/ubuntu_cloud_image_changelog/tarball/master
+    $ curl -OJL https://github.com/CanonicalLtd/ubuntu-cloud-image-changelog/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/philroche/ubuntu_cloud_image_changelog
-.. _tarball: https://github.com/philroche/ubuntu_cloud_image_changelog/tarball/master
+.. _Github repo: https://github.com/CanonicalLtd/ubuntu-cloud-image-changelog
+.. _tarball: https://github.com/CanonicalLtd/ubuntu-cloud-image-changelog/tarball/master
