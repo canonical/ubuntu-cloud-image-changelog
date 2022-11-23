@@ -1,0 +1,399 @@
+{
+    "title": "ChangelogModel",
+    "type": "object",
+    "properties": {
+        "summary": {
+            "$ref": "#/definitions/Summary"
+        },
+        "diff": {
+            "$ref": "#/definitions/Diff"
+        },
+        "added": {
+            "$ref": "#/definitions/Added"
+        },
+        "removed": {
+            "$ref": "#/definitions/Removed"
+        },
+        "notes": {
+            "title": "Notes",
+            "type": "string"
+        },
+        "from_series": {
+            "title": "From Series",
+            "type": "string"
+        },
+        "to_series": {
+            "title": "To Series",
+            "type": "string"
+        },
+        "from_manifest_filename": {
+            "title": "From Manifest Filename",
+            "type": "string"
+        },
+        "to_manifest_filename": {
+            "title": "To Manifest Filename",
+            "type": "string"
+        }
+    },
+    "required": [
+        "summary",
+        "diff",
+        "added",
+        "removed",
+        "from_series",
+        "to_series",
+        "from_manifest_filename",
+        "to_manifest_filename"
+    ],
+    "definitions": {
+        "SnapSummary": {
+            "title": "SnapSummary",
+            "type": "object",
+            "properties": {
+                "added": {
+                    "title": "Added",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "removed": {
+                    "title": "Removed",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "diff": {
+                    "title": "Diff",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "DebSummary": {
+            "title": "DebSummary",
+            "type": "object",
+            "properties": {
+                "added": {
+                    "title": "Added",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "removed": {
+                    "title": "Removed",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "diff": {
+                    "title": "Diff",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "Summary": {
+            "title": "Summary",
+            "type": "object",
+            "properties": {
+                "snap": {
+                    "$ref": "#/definitions/SnapSummary"
+                },
+                "deb": {
+                    "$ref": "#/definitions/DebSummary"
+                }
+            },
+            "required": [
+                "snap",
+                "deb"
+            ]
+        },
+        "FromVersion": {
+            "title": "FromVersion",
+            "type": "object",
+            "properties": {
+                "source_package_name": {
+                    "title": "Source Package Name",
+                    "type": "string"
+                },
+                "source_package_version": {
+                    "title": "Source Package Version",
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "type": "string"
+                }
+            }
+        },
+        "ToVersion": {
+            "title": "ToVersion",
+            "type": "object",
+            "properties": {
+                "source_package_name": {
+                    "title": "Source Package Name",
+                    "type": "string"
+                },
+                "source_package_version": {
+                    "title": "Source Package Version",
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "type": "string"
+                }
+            }
+        },
+        "Cve": {
+            "title": "Cve",
+            "type": "object",
+            "properties": {
+                "cve": {
+                    "title": "Cve",
+                    "type": "string"
+                },
+                "url": {
+                    "title": "Url",
+                    "type": "string"
+                },
+                "cve_description": {
+                    "title": "Cve Description",
+                    "type": "string"
+                },
+                "cve_priority": {
+                    "title": "Cve Priority",
+                    "type": "string"
+                },
+                "cve_public_date": {
+                    "title": "Cve Public Date",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "cve",
+                "url",
+                "cve_description",
+                "cve_priority",
+                "cve_public_date"
+            ]
+        },
+        "Change": {
+            "title": "Change",
+            "type": "object",
+            "properties": {
+                "cves": {
+                    "title": "Cves",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Cve"
+                    }
+                },
+                "log": {
+                    "title": "Log",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "package": {
+                    "title": "Package",
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "type": "string"
+                },
+                "urgency": {
+                    "title": "Urgency",
+                    "type": "string"
+                },
+                "distributions": {
+                    "title": "Distributions",
+                    "type": "string"
+                },
+                "launchpad_bugs_fixed": {
+                    "title": "Launchpad Bugs Fixed",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "author": {
+                    "title": "Author",
+                    "type": "string"
+                },
+                "date": {
+                    "title": "Date",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "package",
+                "version",
+                "urgency",
+                "distributions",
+                "author",
+                "date"
+            ]
+        },
+        "DebPackage": {
+            "title": "DebPackage",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "from_version": {
+                    "$ref": "#/definitions/FromVersion"
+                },
+                "to_version": {
+                    "$ref": "#/definitions/ToVersion"
+                },
+                "cves": {
+                    "title": "Cves",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Cve"
+                    }
+                },
+                "launchpad_bugs_fixed": {
+                    "title": "Launchpad Bugs Fixed",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "changes": {
+                    "title": "Changes",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Change"
+                    }
+                },
+                "notes": {
+                    "title": "Notes",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "from_version",
+                "to_version"
+            ]
+        },
+        "SnapPackage": {
+            "title": "SnapPackage",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "from_version": {
+                    "$ref": "#/definitions/FromVersion"
+                },
+                "to_version": {
+                    "$ref": "#/definitions/ToVersion"
+                }
+            },
+            "required": [
+                "name",
+                "from_version",
+                "to_version"
+            ]
+        },
+        "Diff": {
+            "title": "Diff",
+            "type": "object",
+            "properties": {
+                "deb": {
+                    "title": "Deb",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DebPackage"
+                    }
+                },
+                "snap": {
+                    "title": "Snap",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SnapPackage"
+                    }
+                }
+            },
+            "required": [
+                "deb",
+                "snap"
+            ]
+        },
+        "Added": {
+            "title": "Added",
+            "type": "object",
+            "properties": {
+                "deb": {
+                    "title": "Deb",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DebPackage"
+                    }
+                },
+                "snap": {
+                    "title": "Snap",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SnapPackage"
+                    }
+                }
+            },
+            "required": [
+                "deb",
+                "snap"
+            ]
+        },
+        "Removed": {
+            "title": "Removed",
+            "type": "object",
+            "properties": {
+                "deb": {
+                    "title": "Deb",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DebPackage"
+                    }
+                },
+                "snap": {
+                    "title": "Snap",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SnapPackage"
+                    }
+                }
+            },
+            "required": [
+                "deb",
+                "snap"
+            ]
+        }
+    }
+}
