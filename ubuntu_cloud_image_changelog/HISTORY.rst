@@ -2,6 +2,13 @@
 History
 =======
 
+0.13.2 (2022-11-22)
+-------------------
+
+* Improved support for JSON output
+* Added new `generate` and `schema` commands
+  * `schema` command generates a JSON schema for the given changelog model used in JSON output
+
 0.12.2 (2022-11-15)
 -------------------
 
