@@ -41,6 +41,6 @@ setup(
     name="ubuntu-cloud-image-changelog",
     packages=find_packages(include=["ubuntu_cloud_image_changelog", "ubuntu_cloud_image_changelog.*"]),
     url="https://github.com/CanonicalLtd/ubuntu-cloud-image-changelog",
-    version="0.13.3",
+    version="0.13.4",
     zip_safe=False,
 )
