@@ -25,6 +25,8 @@ ubuntu-cloud-image-changelog generate --from-manifest 20220420-ubuntu-22.04-serv
                                       --to-manifest 20221117-ubuntu-22.04-server-cloudimg-amd64.manifest \
                                       --from-series jammy \
                                       --to-series jammy \
+                                      --from-serial 20220420 \
+                                      --to-serial 20221117 \
                                       --image-architecture amd64 \
                                       --highlight-cves \
                                       --notes "Changelog diff for Ubuntu 22.04 jammy base cloud image from serial 20220420 to 20221117" \

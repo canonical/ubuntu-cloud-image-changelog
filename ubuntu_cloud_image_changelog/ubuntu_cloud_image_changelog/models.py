@@ -91,5 +91,7 @@ class ChangelogModel(BaseModel):
     notes: Optional[str] = None
     from_series: str
     to_series: str
+    from_serial: str = None
+    to_serial: str = None
     from_manifest_filename: str
     to_manifest_filename: str

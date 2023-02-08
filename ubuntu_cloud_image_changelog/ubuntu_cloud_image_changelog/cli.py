@@ -39,6 +39,8 @@ def cli(ctx):
 )
 @click.option("--from-series", help='the Ubuntu series eg. "20.04" or "focal"', required=True)
 @click.option("--to-series", help='the Ubuntu series eg. "20.04" or "focal"', required=True)
+@click.option("--from-serial", help='The Ubuntu cloud image serial (cat /etc/cloud/build.info)', required=False, default=None)
+@click.option("--to-serial", help='The Ubuntu cloud image serial (cat /etc/cloud/build.info)', required=False, default=None)
 @click.option(
     "--from-manifest",
     required=True,
@@ -110,6 +112,8 @@ def generate(
     lp_credentials_store: Optional[str],
     from_series: str,
     to_series: str,
+    from_serial: str,
+    to_serial: str,
     from_manifest: click.File,
     to_manifest: click.File,
     ppas: List[str],
@@ -154,6 +158,8 @@ def generate(
             notes=notes,
             from_series=from_series,
             to_series=to_series,
+            from_serial=from_serial,
+            to_serial=to_serial,
             from_manifest_filename=from_manifest.name,
             to_manifest_filename=to_manifest.name,
             summary=Summary(

@@ -26,6 +26,14 @@
             "title": "To Series",
             "type": "string"
         },
+        "from_serial": {
+            "title": "From Serial",
+            "type": "string"
+        },
+        "to_serial": {
+            "title": "To Serial",
+            "type": "string"
+        },
         "from_manifest_filename": {
             "title": "From Manifest Filename",
             "type": "string"
