@@ -541,8 +541,8 @@ def generate(
                 )
                 diff_deb_package_from_version = FromVersion(
                     version=from_to["from"],
-                    source_package_name=to_source_package_name,
-                    source_package_version=to_source_package_version,
+                    source_package_name=from_source_package_name,
+                    source_package_version=from_source_package_version,
                 )
                 diff_deb_package = DebPackage(
                     name=package,
