@@ -583,9 +583,9 @@ def generate(
     if output_json:
         with open(output_json, "w") as ouput_json_file:
             if output_json_pretty:
-                ouput_json_file.write(changelog.json(indent=4))
+                ouput_json_file.write(changelog.model_dump_json(indent=4))
             else:
-                ouput_json_file.write(changelog.json())
+                ouput_json_file.write(changelog.model_dump_json())
 
 
 def echo_changes(highlight_cves, version_changelog_change):
@@ -631,7 +631,7 @@ def echo_changes(highlight_cves, version_changelog_change):
 @cli.command()
 @click.pass_context
 def schema(ctx):
-    click.echo(ChangelogModel.schema_json(indent=4))
+    click.echo(ChangelogModel.model_json_schema(indent=4))
 
 
 if __name__ == "__main__":
