@@ -21,15 +21,15 @@ class Summary(BaseModel):
 
 
 class FromVersion(BaseModel):
-    source_package_name: Optional[str]
-    source_package_version: Optional[str]
-    version: str = None
+    source_package_name: Optional[str] = None
+    source_package_version: Optional[str] = None
+    version: Optional[str] = None
 
 
 class ToVersion(BaseModel):
-    source_package_name: Optional[str]
-    source_package_version: Optional[str]
-    version: str = None
+    source_package_name: Optional[str] = None
+    source_package_version: Optional[str] = None
+    version: Optional[str] = None
 
 
 class Cve(BaseModel):
@@ -59,7 +59,7 @@ class DebPackage(BaseModel):
     cves: Optional[List[Cve]] = []
     launchpad_bugs_fixed: Optional[List[int]] = []
     changes: Optional[List[Change]] = []
-    notes: Optional[str]
+    notes: Optional[str] = None
 
 
 class SnapPackage(BaseModel):
