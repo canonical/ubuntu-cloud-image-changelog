@@ -2,6 +2,13 @@
 History
 =======
 
+0.14.0 (2023-07-04)
+-------------------
+
+* Migrated to pydantic 2.0
+  * This is not a backwards compatible change and requires pydanitc 2.0 or later.
+  * See https://docs.pydantic.dev/latest/migration/ for migration guide used.
+
 0.13.2 (2022-11-22)
 -------------------
 
