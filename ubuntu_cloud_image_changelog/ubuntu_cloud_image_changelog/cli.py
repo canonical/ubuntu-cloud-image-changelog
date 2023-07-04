@@ -1,5 +1,6 @@
 """Console script for ubuntu_cloud_image_changelog."""
 import os
+import json
 import tempfile
 from typing import List, Optional
 
@@ -631,7 +632,7 @@ def echo_changes(highlight_cves, version_changelog_change):
 @cli.command()
 @click.pass_context
 def schema(ctx):
-    click.echo(ChangelogModel.model_json_schema(indent=4))
+    click.echo(json.dumps(ChangelogModel.model_json_schema(), indent=4))
 
 
 if __name__ == "__main__":
