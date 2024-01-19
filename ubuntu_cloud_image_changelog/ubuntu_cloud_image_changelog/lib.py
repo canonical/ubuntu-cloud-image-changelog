@@ -1,4 +1,5 @@
 """Library module."""
+import difflib
 import logging
 import os
 import re
@@ -137,9 +138,9 @@ def _get_cve_details(cve, launchpad):
 
 def parse_changelog(
     launchpad: object,
-    changelog_filename: str,
-    from_version: str = None,
-    to_version: str = None,
+    to_changelog_filename: str,
+    to_version: str,
+    from_changelog_filename: Optional[str] = None,
     count: Optional[int] = 1,
     highlight_cves: bool = False,
 ):
@@ -148,66 +149,128 @@ def parse_changelog(
 
     The range of changelog entries returned will include all entries
     after version_low up to, and including, version_high.
-    If either the starting or ending version are not found in the
-    list of changelog entries the result will be incomplete and
-    a non-empty error message is returned to indicate the issue.
+    In case of any parsing issues a non-empty error message is returned to indicate the issue.
     """
     changelogs: List[Change] = []
-    if not to_version:
-        raise Exception("to_version must be specified when parsing changelog")
+    if not to_version or not to_changelog_filename:
+        raise Exception("to_version and to_changelog_filename must be specified when parsing changelog")
 
-    with open(changelog_filename, "r") as fileptr:
-        try:
-            parsed_changelog = Changelog(fileptr.read())
-            # The changelog blocks are in reverse order; we'll see high|to before low|from.
-            for changelog_block in parsed_changelog:
-                if changelog_block.version:
-                    # if changelog_block.version is None then this is a
-                    # changelog we are unable to parse
-                    changelog_version_equal_to_or_before_to_version = Version(
-                        changelog_block.version.full_version
-                    ) <= Version(to_version)
+    try:
+        parseable_changelog_diff = get_parseable_changelog_diff(from_changelog_filename, to_changelog_filename)
+        parsed_changelog = Changelog(parseable_changelog_diff)
+        # The changelog blocks are in reverse order; we'll see high|to before low|from.
+        for changelog_block in parsed_changelog:
+            if not changelog_block.changes():
+                continue
+            if changelog_block.version and \
+                Version(changelog_block.version.full_version) > \
+                Version(to_version):
+                logging.warning("Changelog block version {} is unexpectedly greater than to_version {}".format(
+                    changelog_block.version.full_version, to_version))
 
-                    if from_version:
-                        if Version(changelog_block.version.full_version) <= Version(from_version):
-                            # If we have reached our from version then we can
-                            # stop parsing
-                            break
+            # Attempt to parse theCVEs referenced in the changelog entries
+            cves = []
+            if highlight_cves:
+                cves = _parse_cve_details(changelog_block.changes(), launchpad)
 
-                    if changelog_version_equal_to_or_before_to_version:
-                        # Attempt to parse theCVEs referenced in the changelog entries
-                        cves = []
-                        if highlight_cves:
-                            cves = _parse_cve_details(changelog_block.changes(), launchpad)
+            changelog_change = Change(
+                package=changelog_block.package,
+                version=str(changelog_block.version),
+                urgency=changelog_block.urgency,
+                distributions=changelog_block.distributions,
+                launchpad_bugs_fixed=changelog_block.lp_bugs_closed,
+                author=changelog_block.author,
+                date=changelog_block.date,
+                log=changelog_block.changes(),
+                cves=cves,
+            )
+            changelogs.append(changelog_change)
+            if count and len(changelogs) == count:
+                break  # we have enough blocks now
 
-                        changelog_change = Change(
-                            package=changelog_block.package,
-                            version=str(changelog_block.version),
-                            urgency=changelog_block.urgency,
-                            distributions=changelog_block.distributions,
-                            launchpad_bugs_fixed=changelog_block.lp_bugs_closed,
-                            author=changelog_block.author,
-                            date=changelog_block.date,
-                            log=changelog_block.changes(),
-                            cves=cves,
-                        )
-                        changelogs.append(changelog_change)
-                    if count and len(changelogs) == count:
-                        break  # we have enough blocks now
-
-            # log a warning if we have no changelog or
-            # from_version  ot found or to_version not found
-            if not changelogs:
-                logging.warning(
-                    "Unable to parse changelog {} for versions {} to {}".format(
-                        changelog_filename, from_version, to_version
-                    )
+        # log a warning if we have no changelog
+        if not changelogs:
+            logging.warning(
+                "Unable to parse changelog diff from files {} to {}".format(
+                    from_changelog_filename, to_changelog_filename
                 )
-        except Exception as ex:
-            raise ex
-            raise Exception("Unable to parse package changelog {}".format(changelog_filename))
+            )
+    except Exception as ex:
+        logging.exception(ex)
+        raise ex
 
-        return changelogs
+    return changelogs
+
+
+def get_parseable_changelog_diff(
+    from_changelog_filename: Optional[str],
+    to_changelog_filename: str,
+) -> str:
+    """
+    This function diffs the from_changelog and to_changelog,
+    finds lines that were added to the to_changelog (lines prefixed by "+") and returns them.
+    In doing so, any diff headers and diff line prefix, i.e "+" is removed.
+    This is done so that the changelog that is returned from this function
+    can be parsed as is, without the need for any further processing before parsing.
+
+    For example for the following diff
+    ==================================================================
+    ---
+    +++
+    @@ -1,3 +1,23 @@
+    +linux-fips (5.4.0-1081.90) focal; urgency=medium
+    +
+    +  * focal/linux-fips: 5.4.0-1081.90 -proposed tracker (LP: #2026376)
+    +
+    +  [ Ubuntu: 5.4.0-155.172 ]
+    +
+    +  * focal/linux: 5.4.0-155.172 -proposed tracker (LP: #2026401)
+    +  * CVE-2023-3390
+    +    - netfilter: nf_tables: incorrect error path handling with NFT_MSG_NEWRULE
+    +
+    + -- Stefan Bader <stefan.bader@canonical.com>  Tue, 11 Jul 2023 11:44:01 +0200
+    +
+     linux-fips (5.4.0-1080.89) focal; urgency=medium
+
+       * focal/linux-fips: 5.4.0-1080.89 -proposed tracker (LP: #2024082)
+
+    ==================================================================
+    The following lines would be returned
+    ==================================================================
+
+    linux-fips (5.4.0-1081.90) focal; urgency=medium
+
+      * focal/linux-fips: 5.4.0-1081.90 -proposed tracker (LP: #2026376)
+
+      [ Ubuntu: 5.4.0-155.172 ]
+
+      * focal/linux: 5.4.0-155.172 -proposed tracker (LP: #2026401)
+      * CVE-2023-3390
+        - netfilter: nf_tables: incorrect error path handling with NFT_MSG_NEWRULE
+
+     -- Stefan Bader <stefan.bader@canonical.com>  Tue, 11 Jul 2023 11:44:01 +0200
+
+    ==================================================================
+    """
+    if not from_changelog_filename:
+        return open(to_changelog_filename).read()
+    try:
+        with open(from_changelog_filename, "r") as from_changelog_fileptr, \
+        open(to_changelog_filename, "r") as to_changelog_fileptr:
+            changelog_diff_lines = []
+            unified_diff = difflib.unified_diff(from_changelog_fileptr.readlines(), to_changelog_fileptr.readlines())
+            for line in unified_diff:
+
+                # Skip diff headers
+                if line.startswith(("+++", "---", "@@")):
+                    continue
+
+                if line.startswith("+"):
+                    changelog_diff_lines += [line[1:]]
+            return ''.join(changelog_diff_lines)
+    except Exception as ex:
+        logging.exception(ex)
+        raise ex
 
 
 def get_changelog(

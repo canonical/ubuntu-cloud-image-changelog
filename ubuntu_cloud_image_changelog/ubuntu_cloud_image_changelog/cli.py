@@ -361,7 +361,7 @@ def generate(
                     from_to["to"],
                     ppas,
                 )
-                package_changelog_file = lib.get_changelog(
+                to_package_changelog_file = lib.get_changelog(
                     launchpad,
                     ubuntu,
                     to_lp_series,
@@ -380,11 +380,20 @@ def generate(
                     if removed_deb_package.from_version.source_package_name == to_source_package_name:
                         removed_source_package_name = removed_deb_package.from_version.source_package_name
                         removed_source_package_version = removed_deb_package.from_version.source_package_version
+                        removed_source_package_changelog_file = lib.get_changelog(
+                            launchpad,
+                            ubuntu,
+                            from_lp_series,
+                            tmp_cache_directory,
+                            removed_source_package_name,
+                            removed_source_package_version,
+                            ppas
+                        )
                         version_added_changelogs = lib.parse_changelog(
                             launchpad,
-                            package_changelog_file,
-                            from_version=removed_source_package_version,
+                            to_changelog_filename=to_package_changelog_file,
                             to_version=to_source_package_version,
+                            from_changelog_filename=removed_source_package_changelog_file,
                             count=None,
                             highlight_cves=highlight_cves,
                         )
@@ -421,7 +430,7 @@ def generate(
                 if not version_added_changelogs:
                     version_added_changelogs = lib.parse_changelog(
                         launchpad,
-                        package_changelog_file,
+                        to_changelog_filename=to_package_changelog_file,
                         to_version=to_source_package_version,
                         count=3,
                         highlight_cves=highlight_cves,
@@ -496,7 +505,17 @@ def generate(
                     to_source_package_version,
                 ) = lib.get_source_package_details(ubuntu, launchpad, to_lp_arch_series, package, from_to["to"], ppas)
 
-                package_changelog_file = lib.get_changelog(
+                from_package_changelog_file = lib.get_changelog(
+                    launchpad,
+                    ubuntu,
+                    from_lp_series,
+                    tmp_cache_directory,
+                    from_source_package_name,
+                    from_source_package_version,
+                    ppas
+                )
+
+                to_package_changelog_file = lib.get_changelog(
                     launchpad,
                     ubuntu,
                     to_lp_series,
@@ -510,9 +529,9 @@ def generate(
 
                 version_diff_changelogs = lib.parse_changelog(
                     launchpad,
-                    package_changelog_file,
-                    from_version=from_source_package_version,
+                    to_changelog_filename=to_package_changelog_file,
                     to_version=to_source_package_version,
+                    from_changelog_filename=from_package_changelog_file,
                     count=None,
                     highlight_cves=highlight_cves,
                 )
