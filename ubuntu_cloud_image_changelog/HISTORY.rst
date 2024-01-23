@@ -2,6 +2,11 @@
 History
 =======
 
+0.15.0 (2024-01-23)
+-------------------
+
+* Improve changelog parsing to work with fips version strings
+
 0.14.0 (2023-07-04)
 -------------------
 
