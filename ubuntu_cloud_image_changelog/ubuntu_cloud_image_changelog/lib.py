@@ -162,11 +162,12 @@ def parse_changelog(
         for changelog_block in parsed_changelog:
             if not changelog_block.changes():
                 continue
-            if changelog_block.version and \
-                Version(changelog_block.version.full_version) > \
-                Version(to_version):
-                logging.warning("Changelog block version {} is unexpectedly greater than to_version {}".format(
-                    changelog_block.version.full_version, to_version))
+            if changelog_block.version and Version(changelog_block.version.full_version) > Version(to_version):
+                logging.warning(
+                    "Changelog block version {} is unexpectedly greater than to_version {}".format(
+                        changelog_block.version.full_version, to_version
+                    )
+                )
 
             # Attempt to parse theCVEs referenced in the changelog entries
             cves = []
@@ -255,19 +256,19 @@ def get_parseable_changelog_diff(
     if not from_changelog_filename:
         return open(to_changelog_filename).read()
     try:
-        with open(from_changelog_filename, "r") as from_changelog_fileptr, \
-        open(to_changelog_filename, "r") as to_changelog_fileptr:
+        with open(from_changelog_filename, "r") as from_changelog_fileptr, open(
+            to_changelog_filename, "r"
+        ) as to_changelog_fileptr:
             changelog_diff_lines = []
             unified_diff = difflib.unified_diff(from_changelog_fileptr.readlines(), to_changelog_fileptr.readlines())
             for line in unified_diff:
-
                 # Skip diff headers
                 if line.startswith(("+++", "---", "@@")):
                     continue
 
                 if line.startswith("+"):
                     changelog_diff_lines += [line[1:]]
-            return ''.join(changelog_diff_lines)
+            return "".join(changelog_diff_lines)
     except Exception as ex:
         logging.exception(ex)
         raise ex
