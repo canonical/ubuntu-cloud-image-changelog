@@ -1,13 +1,12 @@
 """Library module."""
-import difflib
 import logging
 import os
 import re
 import urllib.parse
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import click
-from debian.changelog import Changelog
+from debian.changelog import Changelog, ChangeBlock
 from debian.debian_support import Version
 from lazr.restfulclient.errors import NotFound
 
@@ -145,7 +144,8 @@ def parse_changelog(
     highlight_cves: bool = False,
 ):
     """
-    Extract changelog entries within a version range
+    Extract changelog entries not present in from_changelog
+    but present in to_changelog
 
     The range of changelog entries returned will include all entries
     after version_low up to, and including, version_high.
@@ -156,10 +156,9 @@ def parse_changelog(
         raise Exception("to_version and to_changelog_filename must be specified when parsing changelog")
 
     try:
-        parseable_changelog_diff = get_parseable_changelog_diff(from_changelog_filename, to_changelog_filename)
-        parsed_changelog = Changelog(parseable_changelog_diff)
+        changelog_diff = get_changelog_diff(from_changelog_filename, to_changelog_filename, count)
         # The changelog blocks are in reverse order; we'll see high|to before low|from.
-        for changelog_block in parsed_changelog:
+        for changelog_block in changelog_diff:
             if not changelog_block.changes():
                 continue
             if changelog_block.version and Version(changelog_block.version.full_version) > Version(to_version):
@@ -203,76 +202,42 @@ def parse_changelog(
     return changelogs
 
 
-def get_parseable_changelog_diff(
+def get_changelog_diff(
     from_changelog_filename: Optional[str],
     to_changelog_filename: str,
-) -> str:
+    count: Optional[int]
+) -> List[ChangeBlock]:
     """
-    This function diffs the from_changelog and to_changelog,
-    finds lines that were added to the to_changelog (lines prefixed by "+") and returns them.
-    In doing so, any diff headers and diff line prefix, i.e "+" is removed.
-    This is done so that the changelog that is returned from this function
-    can be parsed as is, without the need for any further processing before parsing.
-
-    For example for the following diff
-    ==================================================================
-    ---
-    +++
-    @@ -1,3 +1,23 @@
-    +linux-fips (5.4.0-1081.90) focal; urgency=medium
-    +
-    +  * focal/linux-fips: 5.4.0-1081.90 -proposed tracker (LP: #2026376)
-    +
-    +  [ Ubuntu: 5.4.0-155.172 ]
-    +
-    +  * focal/linux: 5.4.0-155.172 -proposed tracker (LP: #2026401)
-    +  * CVE-2023-3390
-    +    - netfilter: nf_tables: incorrect error path handling with NFT_MSG_NEWRULE
-    +
-    + -- Stefan Bader <stefan.bader@canonical.com>  Tue, 11 Jul 2023 11:44:01 +0200
-    +
-     linux-fips (5.4.0-1080.89) focal; urgency=medium
-
-       * focal/linux-fips: 5.4.0-1080.89 -proposed tracker (LP: #2024082)
-
-    ==================================================================
-    The following lines would be returned
-    ==================================================================
-
-    linux-fips (5.4.0-1081.90) focal; urgency=medium
-
-      * focal/linux-fips: 5.4.0-1081.90 -proposed tracker (LP: #2026376)
-
-      [ Ubuntu: 5.4.0-155.172 ]
-
-      * focal/linux: 5.4.0-155.172 -proposed tracker (LP: #2026401)
-      * CVE-2023-3390
-        - netfilter: nf_tables: incorrect error path handling with NFT_MSG_NEWRULE
-
-     -- Stefan Bader <stefan.bader@canonical.com>  Tue, 11 Jul 2023 11:44:01 +0200
-
-    ==================================================================
+    This function finds the version numbers present in to_changelog file
+    but not in from_changelog file and returns a list of changelog blocks
+    of those versions.
     """
-    if not from_changelog_filename:
-        return open(to_changelog_filename).read()
     try:
-        with open(from_changelog_filename, "r") as from_changelog_fileptr, open(
-            to_changelog_filename, "r"
-        ) as to_changelog_fileptr:
-            changelog_diff_lines = []
-            unified_diff = difflib.unified_diff(from_changelog_fileptr.readlines(), to_changelog_fileptr.readlines())
-            for line in unified_diff:
-                # Skip diff headers
-                if line.startswith(("+++", "---", "@@")):
-                    continue
+        from_changelog_versions: Set[str] = set()
+        changelog_diff: List[ChangeBlock] = []
+        if from_changelog_filename:
+            from_changelog_versions = set(get_versions_from_changelog(from_changelog_filename))
 
-                if line.startswith("+"):
-                    changelog_diff_lines += [line[1:]]
-            return "".join(changelog_diff_lines)
+        with open(to_changelog_filename, "r") as to_changelog_file_ptr:
+            parsed_to_changelog = Changelog(to_changelog_file_ptr.read())
+            for changelog_block in parsed_to_changelog:
+                if changelog_block.version.full_version not in from_changelog_versions:
+                    changelog_diff += [changelog_block]
+                if count and len(changelog_diff) == count:
+                    break
+        return changelog_diff
+
     except Exception as ex:
         logging.exception(ex)
         raise ex
 
+
+def get_versions_from_changelog(changelog_filename: str) -> Set[str]:
+    """
+    Returns a set of all full_version strings in passed changelog
+    """
+    with open(changelog_filename, "r") as from_changelog_file_ptr:
+        return {version.full_version for version in Changelog(from_changelog_file_ptr.read()).versions}
 
 def get_changelog(
     launchpad,
