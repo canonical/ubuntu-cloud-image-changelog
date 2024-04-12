@@ -19,6 +19,13 @@ def get_source_package_details(ubuntu, launchpad, lp_arch_series, binary_package
     source_package_name = None
     source_package_version = None
     archive = ubuntu.main_archive
+
+    # Packages names might include an arch.
+    # If so, that arch trumps the series arch.
+    binary_package_name, _, binary_arch_name = binary_package_name.partition(":")
+    if binary_arch_name and lp_arch_series.architecture_tag != binary_arch_name:
+        lp_arch_series = lp_arch_series.distro_series.getDistroArchSeries(archtag=binary_arch_name)
+
     binaries = archive.getPublishedBinaries(
         exact_match=True,
         binary_name=binary_package_name,
