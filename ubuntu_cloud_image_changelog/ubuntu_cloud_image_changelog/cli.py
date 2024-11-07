@@ -583,12 +583,14 @@ def generate(
                     diff_deb_package.launchpad_bugs_fixed.extend(version_diff_changelog_change.launchpad_bugs_fixed)
                     diff_deb_package.changes.append(version_diff_changelog_change)
 
+                changes_present = len(diff_deb_package.changes) > 0
+                no_changes_string = "missing"
                 click.echo("Source: {}".format(to_source_package_name))
                 click.echo("Version: {}".format(to_source_package_version))
-                click.echo("Distribution: {}".format(diff_deb_package.changes[0].distributions))
-                click.echo("Urgency: {}".format(diff_deb_package.changes[0].urgency))
-                click.echo("Maintainer: {}".format(diff_deb_package.changes[0].author))
-                click.echo("Date: {}".format(diff_deb_package.changes[0].date))
+                click.echo("Distribution: {}".format(diff_deb_package.changes[0].distributions if changes_present else no_changes_string))
+                click.echo("Urgency: {}".format(diff_deb_package.changes[0].urgency if changes_present else no_changes_string))
+                click.echo("Maintainer: {}".format(diff_deb_package.changes[0].author if changes_present else no_changes_string))
+                click.echo("Date: {}".format(diff_deb_package.changes[0].date if changes_present else no_changes_string))
                 click.echo(
                     "Launchpad-Bugs-Fixed: {}".format(
                         ",".join(
