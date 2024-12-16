@@ -163,12 +163,14 @@ def parse_changelog(
         raise Exception("to_version and to_changelog_filename must be specified when parsing changelog")
 
     try:
+        from_changelog_filename, to_changelog_filename, is_version_downgrade = check_version_downgrade(
+            from_changelog_filename, to_changelog_filename)
         changelog_diff = get_changelog_diff(from_changelog_filename, to_changelog_filename, count)
         # The changelog blocks are in reverse order; we'll see high|to before low|from.
         for changelog_block in changelog_diff:
             if not changelog_block.changes():
                 continue
-            if changelog_block.version and Version(changelog_block.version.full_version) > Version(to_version):
+            if changelog_block.version and Version(changelog_block.version.full_version) > Version(to_version) and not is_version_downgrade:
                 logging.warning(
                     "Changelog block version {} is unexpectedly greater than to_version {}".format(
                         changelog_block.version.full_version, to_version
@@ -206,7 +208,19 @@ def parse_changelog(
         logging.exception(ex)
         raise ex
 
-    return changelogs
+    return is_version_downgrade, changelogs
+
+
+def check_version_downgrade(from_changelog_filename, to_changelog_filename):
+    is_version_downgrade = False
+    if from_changelog_filename:
+        with open(from_changelog_filename) as from_changelog, open(to_changelog_filename) as to_changelog:
+            # Use changelog length to determine if there's been a version downgrade,
+            # as using version comparison is not reliable, especially with some fips version schemes
+            if os.fstat(from_changelog.fileno()).st_size > os.fstat(to_changelog.fileno()).st_size:
+                is_version_downgrade = True
+                from_changelog_filename, to_changelog_filename = to_changelog_filename, from_changelog_filename
+    return from_changelog_filename, to_changelog_filename, is_version_downgrade
 
 
 def get_changelog_diff(

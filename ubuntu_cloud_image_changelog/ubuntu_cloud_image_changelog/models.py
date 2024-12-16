@@ -60,6 +60,7 @@ class DebPackage(BaseModel):
     launchpad_bugs_fixed: Optional[List[int]] = []
     changes: Optional[List[Change]] = []
     notes: Optional[str] = None
+    is_version_downgrade: bool
 
 
 class SnapPackage(BaseModel):

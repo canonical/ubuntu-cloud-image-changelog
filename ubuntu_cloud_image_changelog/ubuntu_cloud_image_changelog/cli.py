@@ -263,6 +263,7 @@ def generate(
                             source_package_version=removed_source_package_version,
                         ),
                         to_version=ToVersion(version=None),
+                        is_version_downgrade=False,
                     )
 
                     changelog.removed.deb.append(removed_deb_package)
@@ -395,7 +396,8 @@ def generate(
                             removed_source_package_version,
                             ppas,
                         )
-                        version_added_changelogs = lib.parse_changelog(
+                        # Version downgrade check is ignored here as it is not relevant
+                        _, version_added_changelogs = lib.parse_changelog(
                             launchpad,
                             to_changelog_filename=to_package_changelog_file,
                             to_version=to_source_package_version,
@@ -434,7 +436,8 @@ def generate(
                 # If the source package of this added binary package is not the same as the source package of a removed
                 # binary package then get the three most recent changelog entries
                 if not version_added_changelogs:
-                    version_added_changelogs = lib.parse_changelog(
+                    # Version downgrade check is ignored here as it is not relevant
+                    _, version_added_changelogs = lib.parse_changelog(
                         launchpad,
                         to_changelog_filename=to_package_changelog_file,
                         to_version=to_source_package_version,
@@ -464,6 +467,7 @@ def generate(
                     from_version=added_deb_package_from_version,
                     to_version=added_deb_package_to_version,
                     notes=notes,
+                    is_version_downgrade=False,
                 )
 
                 for version_added_changelog_change in version_added_changelogs:
@@ -535,7 +539,7 @@ def generate(
 
                 # get changelog just between the from and to version
 
-                version_diff_changelogs = lib.parse_changelog(
+                is_version_downgrade, version_diff_changelogs = lib.parse_changelog(
                     launchpad,
                     to_changelog_filename=to_package_changelog_file,
                     to_version=to_source_package_version,
@@ -549,7 +553,7 @@ def generate(
                     "==========================================================="
                 )
                 click.echo(
-                    "{} changed from version '{}' to version '{}' "
+                    "{} changed from version '{}' to version '{}'. "
                     "(source package changed from {} version '{}' to {} version '{}')".format(
                         package,
                         from_to["from"],
@@ -560,6 +564,12 @@ def generate(
                         to_source_package_version,
                     )
                 )
+                if is_version_downgrade:
+                    click.echo(
+                        "This is a version downgrade. "
+                        "The following details for this package indicates changes that have been rolled back."
+                    )
+
                 click.echo()
 
                 diff_deb_package_to_version = ToVersion(
@@ -576,6 +586,7 @@ def generate(
                     name=package,
                     from_version=diff_deb_package_from_version,
                     to_version=diff_deb_package_to_version,
+                    is_version_downgrade=is_version_downgrade,
                 )
 
                 for version_diff_changelog_change in version_diff_changelogs:
