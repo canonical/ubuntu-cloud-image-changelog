@@ -10,3 +10,4 @@ Sphinx
 twine
 Click
 isort
+pytest
