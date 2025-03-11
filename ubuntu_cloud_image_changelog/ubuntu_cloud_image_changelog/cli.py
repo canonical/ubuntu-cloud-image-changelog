@@ -1,6 +1,7 @@
 """Console script for ubuntu_cloud_image_changelog."""
-import os
+
 import json
+import os
 import tempfile
 from typing import List, Optional
 
@@ -598,10 +599,22 @@ def generate(
                 no_changes_string = "missing"
                 click.echo("Source: {}".format(to_source_package_name))
                 click.echo("Version: {}".format(to_source_package_version))
-                click.echo("Distribution: {}".format(diff_deb_package.changes[0].distributions if changes_present else no_changes_string))
-                click.echo("Urgency: {}".format(diff_deb_package.changes[0].urgency if changes_present else no_changes_string))
-                click.echo("Maintainer: {}".format(diff_deb_package.changes[0].author if changes_present else no_changes_string))
-                click.echo("Date: {}".format(diff_deb_package.changes[0].date if changes_present else no_changes_string))
+                click.echo(
+                    "Distribution: {}".format(
+                        diff_deb_package.changes[0].distributions if changes_present else no_changes_string
+                    )
+                )
+                click.echo(
+                    "Urgency: {}".format(diff_deb_package.changes[0].urgency if changes_present else no_changes_string)
+                )
+                click.echo(
+                    "Maintainer: {}".format(
+                        diff_deb_package.changes[0].author if changes_present else no_changes_string
+                    )
+                )
+                click.echo(
+                    "Date: {}".format(diff_deb_package.changes[0].date if changes_present else no_changes_string)
+                )
                 click.echo(
                     "Launchpad-Bugs-Fixed: {}".format(
                         ",".join(

@@ -1,16 +1,42 @@
 """Library module."""
+
 import logging
 import os
 import re
 import urllib.parse
+from functools import wraps
 from typing import List, Optional, Set
 
 import click
-from debian.changelog import Changelog, ChangeBlock
+from debian.changelog import ChangeBlock, Changelog
 from debian.debian_support import Version
 from lazr.restfulclient.errors import NotFound
 
 from ubuntu_cloud_image_changelog.models import Change
+
+
+def retry(_func=None, *, num_attempts: int = 5):
+    def retry_inner(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            count = num_attempts
+            success = False
+            return_value = None
+            while not success and count > 0:
+                count -= 1
+                try:
+                    return_value = func(*args, **kwargs)
+                    success = True
+                except Exception:
+                    continue
+            return return_value
+
+        return wrapper
+
+    if _func is None:
+        return retry_inner
+    else:
+        return retry_inner(_func)
 
 
 def get_source_package_details(ubuntu, launchpad, lp_arch_series, binary_package_name, binary_package_version, ppas):
@@ -125,6 +151,7 @@ def _get_cve_url(cve_number):
     return "{}/{}".format(url, cve_number)
 
 
+@retry
 def _get_cve_details(cve, launchpad):
     # download the cve details and parse so we can get the CVE description and the CVE priority
     cve_details_lines = []
@@ -164,13 +191,18 @@ def parse_changelog(
 
     try:
         from_changelog_filename, to_changelog_filename, is_version_downgrade = check_version_downgrade(
-            from_changelog_filename, to_changelog_filename)
+            from_changelog_filename, to_changelog_filename
+        )
         changelog_diff = get_changelog_diff(from_changelog_filename, to_changelog_filename, count)
         # The changelog blocks are in reverse order; we'll see high|to before low|from.
         for changelog_block in changelog_diff:
             if not changelog_block.changes():
                 continue
-            if changelog_block.version and Version(changelog_block.version.full_version) > Version(to_version) and not is_version_downgrade:
+            if (
+                changelog_block.version
+                and Version(changelog_block.version.full_version) > Version(to_version)
+                and not is_version_downgrade
+            ):
                 logging.warning(
                     "Changelog block version {} is unexpectedly greater than to_version {}".format(
                         changelog_block.version.full_version, to_version
@@ -224,9 +256,7 @@ def check_version_downgrade(from_changelog_filename, to_changelog_filename):
 
 
 def get_changelog_diff(
-    from_changelog_filename: Optional[str],
-    to_changelog_filename: str,
-    count: Optional[int]
+    from_changelog_filename: Optional[str], to_changelog_filename: str, count: Optional[int]
 ) -> List[ChangeBlock]:
     """
     This function finds the version numbers present in to_changelog file
@@ -259,6 +289,7 @@ def get_versions_from_changelog(changelog_filename: str) -> Set[str]:
     """
     with open(changelog_filename, "r") as from_changelog_file_ptr:
         return {version.full_version for version in Changelog(from_changelog_file_ptr.read()).versions}
+
 
 def get_changelog(
     launchpad,
