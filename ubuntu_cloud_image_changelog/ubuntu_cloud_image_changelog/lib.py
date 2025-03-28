@@ -37,6 +37,7 @@ def retry(_func=None, *, num_attempts: int = 5):
         return retry_inner(_func)
 
 
+@retry
 def get_source_package_details(ubuntu, launchpad, lp_arch_series, binary_package_name, binary_package_version, ppas):
     # find the published binary for this series, binary_package_name
     # and binary_package_version
@@ -289,6 +290,7 @@ def get_versions_from_changelog(changelog_filename: str) -> Set[str]:
         return {version.full_version for version in Changelog(from_changelog_file_ptr.read()).versions}
 
 
+@retry
 def get_changelog(
     launchpad,
     ubuntu,
@@ -328,17 +330,17 @@ def get_changelog(
 
     package_version_in_archive_changelog = False
     package_version_in_ppa_changelog = False
-    with open(cache_filename, "wb") as cache_file:
-        archive = ubuntu.main_archive
+    archive = ubuntu.main_archive
 
-        # Get the published sources for this exact version
-        sources = archive.getPublishedSources(
-            exact_match=True,
-            source_name=source_package_name,
-            distro_series=lp_series,
-            order_by_date=True,
-            version=source_package_version,
-        )
+    # Get the published sources for this exact version
+    sources = archive.getPublishedSources(
+        exact_match=True,
+        source_name=source_package_name,
+        distro_series=lp_series,
+        order_by_date=True,
+        version=source_package_version,
+    )
+    with open(cache_filename, "wb") as cache_file:
         if len(sources):
             archive_changelog_url = sources[0].changelogUrl()
 
