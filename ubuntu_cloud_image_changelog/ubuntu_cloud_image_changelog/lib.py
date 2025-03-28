@@ -3,6 +3,7 @@
 import logging
 import os
 import re
+import time
 import urllib.parse
 from functools import wraps
 from typing import List, Optional, Set
@@ -19,17 +20,14 @@ def retry(_func=None, *, num_attempts: int = 5):
     def retry_inner(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            count = num_attempts
-            success = False
-            return_value = None
-            while not success and count > 0:
-                count -= 1
+            last_exception = ValueError("num_attempts < 0")
+            for attempt in range(num_attempts):
                 try:
-                    return_value = func(*args, **kwargs)
-                    success = True
-                except Exception:
-                    continue
-            return return_value
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                time.sleep(attempt)
+            raise last_exception
 
         return wrapper
 
