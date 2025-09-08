@@ -271,6 +271,9 @@ def get_changelog_diff(
         with open(to_changelog_filename, "r") as to_changelog_file_ptr:
             parsed_to_changelog = Changelog(to_changelog_file_ptr.read())
             for changelog_block in parsed_to_changelog:
+                if changelog_block._no_trailer == True:
+                    logging.warning(f"Changelog block with no trailer found; omitting from diff: {changelog_block}")
+                    continue
                 if changelog_block.version.full_version not in from_changelog_versions:
                     changelog_diff += [changelog_block]
                 if count and len(changelog_diff) == count:
