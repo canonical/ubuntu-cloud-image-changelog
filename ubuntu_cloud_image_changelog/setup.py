@@ -14,7 +14,7 @@ requirements = ["Click>=7.0", "colorama", "launchpadlib", "pydantic>=2", "python
 
 setup(
     author="Philip Roche",
-    author_email="phil.roche@canonical.com",
+    author_email="cpc@groups.canonical.com",
     python_requires=">=3.5",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
@@ -41,6 +41,6 @@ setup(
     name="ubuntu-cloud-image-changelog",
     packages=find_packages(include=["ubuntu_cloud_image_changelog", "ubuntu_cloud_image_changelog.*"]),
     url="https://github.com/CanonicalLtd/ubuntu-cloud-image-changelog",
-    version="0.15.6",
+    version="0.15.7",
     zip_safe=False,
 )
