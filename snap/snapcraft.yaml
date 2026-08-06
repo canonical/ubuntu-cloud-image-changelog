@@ -1,6 +1,6 @@
 name: ubuntu-cloud-image-changelog
-version: '0.15.6'
-base: core20
+adopt-info: ubuntu-cloud-image-changelog
+base: core24
 summary: Helpful utility to generate package changelog between two cloud images
 description: |
   Helpful utility to generate package changelog between two cloud images
@@ -10,35 +10,36 @@ description: |
   ubuntu-cloud-image-changelog generate --from-manifest manifest1.manifest --to-manifest manifest2.manifest --from-series=focal --to-series=focal
 
 grade: stable
-confinement: strict
+confinement: classic
 
-architectures:
-  - build-on: amd64
-  - build-on: arm64
+platforms:
+  amd64:
+  arm64:
 
 apps:
   ubuntu-cloud-image-changelog:
     environment:
-      PATH: "$SNAP/usr/bin:$SNAP/bin/:$PATH"
       LC_ALL: "C.UTF-8"
-    command: usr/bin/wrapper
-    plugs:
-      - network
-      - home
+      LANG: "C.UTF-8"
+    # Named explicitly, the shebang would find the host python.
+    command: bin/python3 -u $SNAP/bin/ubuntu-cloud-image-changelog
 
 parts:
-  ubuntu-cloud-image-changelog-wrapper:
-    plugin: dump
-    source: snap/local
-    override-build: |
-      chmod +x wrapper
-      snapcraftctl build
-    organize:
-      wrapper: usr/bin/wrapper
-    stage:
-      - usr/bin/wrapper
-
   ubuntu-cloud-image-changelog:
     plugin: python
-    python-packages:
-      - ubuntu-cloud-image-changelog
+    source: ubuntu_cloud_image_changelog
+    # Classic snaps cannot use the base's python. The staged one also builds
+    # the venv, hence python3.12-venv for ensurepip.
+    stage-packages:
+      - libpython3-stdlib
+      - libpython3.12-minimal
+      - libpython3.12-stdlib
+      - python3-minimal
+      - python3.12-minimal
+      - python3.12-venv
+    build-attributes:
+      - enable-patchelf
+    override-build: |
+      craftctl default
+      version="$(python3 -c 'from importlib.metadata import version; print(version("ubuntu-cloud-image-changelog"))')"
+      craftctl set version="$version"
